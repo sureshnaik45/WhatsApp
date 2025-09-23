@@ -44,7 +44,6 @@ const PinnedMessages = ({ onBack, pinnedMessages, onMessageClick }) => {
                         {item.chatName}
                       </h3>
                       <div className="flex items-center space-x-2">
-                        <Pin size={16} className="text-blue-500 fill-current" />
                         <span className={`text-xs text-gray-500`}>
                           {item.message.time}
                         </span>
@@ -59,11 +58,6 @@ const PinnedMessages = ({ onBack, pinnedMessages, onMessageClick }) => {
                         <div className={`text-xs text-gray-500`}>
                           📎 {item.message.fileKind || 'Attachment'}
                         </div>
-                      </div>
-                    )}
-                    {item.message.pinDuration && (
-                      <div className={`text-xs mt-1 text-gray-400`}>
-                        Pinned for {item.message.pinDuration}
                       </div>
                     )}
                   </div>

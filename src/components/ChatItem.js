@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-// ✨ 1. Importing all the necessary icons for the new UI
+// 1. Importing all the necessary icons for the new UI
 import { ChevronDown, Bell, BellOff, Archive, Trash2 } from 'lucide-react';
 
 const ChatItem = ({ chat, onAvatarClick, onChatClick, status, onMuteToggle, onArchive, onDelete }) => {
-  // ✨ 2. State to manage hover and menu visibility
+  // 2. State to manage hover and menu visibility
   const [isHovered, setIsHovered] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // ✨ 3. This hook handles closing the menu when you click outside of it
+  // 3. This hook handles closing the menu when you click outside of it
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -50,7 +50,6 @@ const ChatItem = ({ chat, onAvatarClick, onChatClick, status, onMuteToggle, onAr
     setIsMenuOpen(false);
   };
 
-
   return (
     <div
       className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer border-gray-100 last:border-b-0 relative"
@@ -82,7 +81,7 @@ const ChatItem = ({ chat, onAvatarClick, onChatClick, status, onMuteToggle, onAr
         <p className="text-sm text-gray-600 truncate">{chat.message}</p>
       </div>
 
-      {/* ✨ 5. This is the new dynamic right-side content area */}
+      {/* 5. This is the new dynamic right-side content area */}
       <div className="ml-3 w-8 h-5 flex items-center justify-center">
         {isHovered ? (
           // If hovered, show the ChevronDown button
@@ -100,7 +99,7 @@ const ChatItem = ({ chat, onAvatarClick, onChatClick, status, onMuteToggle, onAr
         ) : null}
       </div>
       
-      {/* ✨ 6. The Dropdown Menu itself. Only visible when isMenuOpen is true. */}
+      {/* 6. The Dropdown Menu itself. Only visible when isMenuOpen is true. */}
       {isMenuOpen && (
         <div ref={menuRef} className="absolute top-10 right-4 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
           <ul className="py-1">

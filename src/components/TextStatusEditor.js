@@ -138,41 +138,32 @@ const TextStatusEditor = ({ onBack, onStatusSent }) => {
                 {/* From Device Button */}
                 <button className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg mb-3 hover:bg-gray-600 transition-colors">
                   Import From Device
-                </button>
-                
-                {/* Bold and Italic Controls */}
-                
-                <div className="flex justify-center space-x-2 mb-3">  
-                                
-                    <button
-                      onClick={() => {
-                        setShowFontOptions(false);
-                        setFontWeight(fontWeight === 'bold' ? 'normal' : 'bold');
-                      }}
-                      className={`px-3 py-2 w-1/3 rounded font-bold text-sm ${
-                        fontWeight === 'bold'
-                          ? 'bg-gray-700 text-white'
-                          : 'bg-gray-700 text-white hover:bg-gray-600'
-                      }`}
-                    >
-                      B
-                    </button>
-                    <button
-                      onClick={() => { setShowFontOptions(false);  setFontStyle(fontStyle === 'italic' ? 'normal' : 'italic')}}
-                      className={`px-3 py-2 w-1/3 rounded italic text-sm ${
-                        fontStyle === 'italic'
-                          ? 'bg-gray-700 text-white'
-                          : 'bg-gray-700 text-white hover:bg-gray-600'
-                      }`}
-                    >
-                      I
-                    </button>  
-                                
-                </div>
-                
-
-                
-                {/* Font List */}
+                </button>                
+                <div className="flex justify-center space-x-2 mb-3">                                  
+                  <button
+                    onClick={() => {
+                      setShowFontOptions(false);
+                      setFontWeight(fontWeight === 'bold' ? 'normal' : 'bold');
+                    }}
+                    className={`px-3 py-2 w-1/3 rounded font-bold text-sm ${
+                      fontWeight === 'bold'
+                        ? 'bg-gray-700 text-white'
+                        : 'bg-gray-700 text-white hover:bg-gray-600'
+                    }`}
+                  >
+                    B
+                  </button>
+                  <button
+                    onClick={() => { setShowFontOptions(false);  setFontStyle(fontStyle === 'italic' ? 'normal' : 'italic')}}
+                    className={`px-3 py-2 w-1/3 rounded italic text-sm ${
+                      fontStyle === 'italic'
+                        ? 'bg-gray-700 text-white'
+                        : 'bg-gray-700 text-white hover:bg-gray-600'
+                    }`}
+                  >
+                    I
+                  </button>                                
+                </div>                
                 <div className="space-y-1">
                   {fonts.map((font) => (
                     <button

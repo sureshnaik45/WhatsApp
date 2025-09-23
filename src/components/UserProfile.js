@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Eye, Edit3, Search, X } from 'lucide-react';
 
-const UserProfile = ({ onBack, onViewerClick }) => {
+const UserProfile = ({ onBack, onViewerClick, userPhoto, setUserPhoto }) => {
   const [currentView, setCurrentView] = useState('main'); // 'main', 'photo', 'viewers'
-  const [userAvatar, setUserAvatar] = useState('👤');
+  const [userAvatar, setUserAvatar] = useState(userPhoto || '👤');
   const [userName, setUserName] = useState('John Doe');
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState('John Doe');
@@ -15,18 +15,13 @@ const UserProfile = ({ onBack, onViewerClick }) => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-        // Close the menu if the click is outside of the menu element
         if (editOptionsRef.current && !editOptionsRef.current.contains(event.target)) {
             setShowEditOptions(false);
         }
     };
-    
-    // Only listen for clicks when the menu is actually open
     if (showEditOptions) {
         document.addEventListener('mousedown', handleClickOutside);
     }
-    
-    // Clean up the listener when the component unmounts or the menu closes
     return () => {
         document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -53,7 +48,12 @@ const UserProfile = ({ onBack, onViewerClick }) => {
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setUserAvatar(e.target.result);
+        const newAvatar = e.target.result;
+        setUserAvatar(newAvatar);
+        // Persist to parent component
+        if (setUserPhoto) {
+          setUserPhoto(newAvatar);
+        }
         setShowEditOptions(false);
         setCurrentView('main');
       };
@@ -63,9 +63,18 @@ const UserProfile = ({ onBack, onViewerClick }) => {
 
   const handleRemovePhoto = () => {
     setUserAvatar('👤');
+    if (setUserPhoto) {
+      setUserPhoto('👤');
+    }
     setShowEditOptions(false);
     setCurrentView('main');
   };
+
+  useEffect(() => {
+    if (userPhoto) {
+      setUserAvatar(userPhoto);
+    }
+  }, [userPhoto]);
 
 
   if (showViewers) {
@@ -154,7 +163,6 @@ const UserProfile = ({ onBack, onViewerClick }) => {
   if (currentView === 'photo') {
     return (
       <div className="h-full flex flex-col bg-gray-100 relative">
-        {/* Header */}
         <div className="bg-green-600 text-white px-4 py-3 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -163,14 +171,10 @@ const UserProfile = ({ onBack, onViewerClick }) => {
               </button>
               <h1 className="text-lg font-medium">Profile Photo</h1>
             </div>
-
-            {/* This is the corrected section for the icons and menu */}
             <div className="flex items-center space-x-3">
               <button onClick={() => setShowViewers(true)} className="p-1 rounded-full hover:bg-black/10">
                 <Eye size={20} className="text-white" />
               </button>
-              
-              {/* The button and menu are now wrapped in a relative container */}
               <div className="relative">
                 <button 
                   onClick={(e) => {
@@ -218,9 +222,6 @@ const UserProfile = ({ onBack, onViewerClick }) => {
             <img src={userAvatar} alt="Profile" className="w-64 h-64 rounded-lg object-cover" />
           )}
         </div>
-
-        {/* (The rest of your code for this view, like the footer and "Seen By" sheet, remains here) */}
-
         <input
           ref={fileInputRef}
           type="file"
@@ -234,7 +235,6 @@ const UserProfile = ({ onBack, onViewerClick }) => {
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Header */}
       <div className="bg-green-600 text-white px-4 py-3">
         <div className="flex items-center space-x-3">
           <button onClick={onBack} className="text-white">
@@ -243,10 +243,7 @@ const UserProfile = ({ onBack, onViewerClick }) => {
           <h1 className="text-lg font-medium">Profile</h1>
         </div>
       </div>
-
-      {/* Profile Content */}
       <div className="flex-1 bg-white p-6">
-        {/* Profile Avatar */}
         <div className="flex justify-center mb-6">
           <div 
             className="cursor-pointer"
@@ -261,8 +258,6 @@ const UserProfile = ({ onBack, onViewerClick }) => {
             )}
           </div>
         </div>
-
-        {/* Profile Info */}
         <div className="space-y-6">
           <div>
             <label className="text-sm text-gray-500 mb-1 block">Name</label>

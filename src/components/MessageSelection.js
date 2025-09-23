@@ -1,10 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CornerUpLeft, Star, ArrowLeft, Pin, AlertCircle, Copy, Trash2, Forward } from 'lucide-react';
+import { CornerUpLeft, Star, ArrowLeft, Pin, AlertCircle, Copy, Trash2, Forward, PinOff, StarOff } from 'lucide-react';
 
 const MessageSelection = ({
   selectedMessages,
-  messages,
-  pinnedStack,
   onBack,
   onStar,
   onPin,
@@ -26,10 +24,54 @@ const MessageSelection = ({
   const pinState = getPinState(selectedMessages);
 
   const handleStarClick = () => {
-    if (onStar) onStar(selectedMessages);
+    if (onStar) {
+      onStar(selectedMessages);
+      onBack(); // Close selection UI after operation
+    }
   };
 
-  
+  const handlePinClick = (duration) => {
+    if (onPin) {
+      onPin(selectedMessages, duration);
+      setShowPinOptions(false);
+      onBack(); // Close selection UI after operation
+    }
+  };
+
+  const handleCopyClick = () => {
+    if (onCopy) {
+      onCopy(selectedMessages);
+      onBack(); // Close selection UI after operation
+    }
+  };
+
+  const handleDeleteClick = () => {
+    if (onDelete) {
+      onDelete(selectedMessages);
+      onBack(); // Close selection UI after operation
+    }
+  };
+
+  const handleForwardClick = () => {
+    if (onForward) {
+      onForward(selectedMessages);
+      onBack(); // Close selection UI after operation
+    }
+  };
+
+  const handleReplyClick = () => {
+    if (onReply) {
+      onReply(selectedMessages);
+      onBack(); // Close selection UI after operation
+    }
+  };
+
+  const handleInfoClick = () => {
+    if (onInfo) {
+      onInfo(selectedMessages);
+      onBack(); // Close selection UI after operation
+    }
+  };
   
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -57,7 +99,7 @@ const MessageSelection = ({
           {/* Reply - only for single selection */}
           {isSingleSelected && (
             <button
-              onClick={() => onReply && onReply(selectedMessages)}
+              onClick={handleReplyClick}
               className="text-white hover:bg-green-700 p-2 rounded flex items-center justify-center"
             >
               <CornerUpLeft size={20} strokeWidth={2} />
@@ -70,11 +112,11 @@ const MessageSelection = ({
               onClick={handleStarClick}
               className="text-white hover:bg-green-700 p-2 rounded flex items-center justify-center"
             >
-              <Star 
-                size={20} 
-                strokeWidth={2} 
-                fill={starState === 'canUnstar' ? "white" : "none"} 
-              />
+              {starState === 'canUnstar' ? (
+                <StarOff size={20} strokeWidth={2} />
+              ) : (
+                <Star size={20} strokeWidth={2} />
+              )}
             </button>
           )}
 
@@ -85,14 +127,21 @@ const MessageSelection = ({
                 className="text-white hover:bg-green-700 p-2 rounded flex items-center justify-center" 
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowPinOptions(!showPinOptions);
+                  // If the message can be unpinned, unpin it immediately.
+                  if (pinState === 'canUnpin') {
+                    handlePinClick(null); // Pass null for duration to signify unpin
+                  } else {
+                  // Otherwise, show the duration options.
+                    setShowPinOptions(!showPinOptions);
+                  }
                 }}
               >
-                <Pin 
-                  size={20} 
-                  strokeWidth={2}
-                  fill={pinState === 'canUnpin' ? "white" : "none"}
-                />
+                {/* Conditionally render Pin or PinOff icon */}
+                {pinState === 'canUnpin' ? (
+                  <PinOff size={20} strokeWidth={2} />
+                ) : (
+                  <Pin size={20} strokeWidth={2} />
+                )}
               </button>
               
               {showPinOptions && (
@@ -107,10 +156,7 @@ const MessageSelection = ({
                     <button
                       key={option.value}
                       className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-gray-700"
-                      onClick={() => {
-                        onPin(selectedMessages, option.label);
-                        setShowPinOptions(false);
-                      }}
+                      onClick={() => handlePinClick(option.label)}
                     >
                       {option.label}
                     </button>
@@ -123,7 +169,7 @@ const MessageSelection = ({
           {/* Info - only for single selection */}
           {isSingleSelected && (
             <button
-              onClick={() => onInfo && onInfo(selectedMessages)}
+              onClick={handleInfoClick}
               className="text-white hover:bg-green-700 p-2 rounded flex items-center justify-center"
             >
               <AlertCircle size={20} strokeWidth={2} />
@@ -132,7 +178,7 @@ const MessageSelection = ({
 
           {/* Copy */}
           <button
-            onClick={() => onCopy && onCopy(selectedMessages)}
+            onClick={handleCopyClick}
             className="text-white hover:bg-green-700 p-2 rounded flex items-center justify-center"
           >
             <Copy size={20} strokeWidth={2} />
@@ -140,7 +186,7 @@ const MessageSelection = ({
 
           {/* Delete */}
           <button
-            onClick={() => onDelete && onDelete(selectedMessages)}
+            onClick={handleDeleteClick}
             className="text-white hover:bg-green-700 p-2 rounded flex items-center justify-center"
           >
             <Trash2 size={20} strokeWidth={2} />
@@ -148,7 +194,7 @@ const MessageSelection = ({
 
           {/* Forward */}
           <button
-            onClick={() => onForward && onForward(selectedMessages)}
+            onClick={handleForwardClick}
             className="text-white hover:bg-green-700 p-2 rounded flex items-center justify-center"
           >
             <Forward size={20} strokeWidth={2} />

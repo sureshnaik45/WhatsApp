@@ -14,7 +14,6 @@ const ProfilePicture = ({ chat, onBack }) => {
       className="h-full flex flex-col bg-black relative"
       onClick={handleBackgroundClick}
     >
-      {/* Header */}
       <div className="bg-black bg-opacity-80 text-white px-4 py-3 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -27,13 +26,9 @@ const ProfilePicture = ({ chat, onBack }) => {
               </svg>
             </button>
             <h1 className="text-lg font-medium">{chat.name}</h1>
-          </div>
-          
-         
+          </div>                  
         </div>
       </div>
-
-      {/* Profile Picture Display */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="relative">
           {/* Main profile picture */}
@@ -45,19 +40,12 @@ const ProfilePicture = ({ chat, onBack }) => {
             }}
           >
             <span className="drop-shadow-lg">{chat.avatar}</span>
-          </div>
-
-          
+          </div>         
         </div>
       </div>
-
-      {/* Bottom info */}
       <div className="text-white text-center p-6 bg-black bg-opacity-80">
         <p className="text-lg font-medium opacity-90">Profile Photo</p>
         <p className="text-sm opacity-60 mt-1">Updated September 12, 9:15 PM</p>
-        
-        {/* Additional info */}
-        
       </div>
     </div>
   );

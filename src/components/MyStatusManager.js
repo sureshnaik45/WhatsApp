@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Music, Type, FileText, Image, Video, Volume2, VolumeX, Download, Music4Icon } from 'lucide-react';
+import { X, Music, Type, FileText, Image, Video, Bell, BellOff, Download, Music4Icon } from 'lucide-react';
 import TextStatusEditor from './TextStatusEditor.js';
 import DeviceImages from './DeviceImages.js';
 
@@ -75,10 +75,7 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
       setSelectedOption('music');
     }
   };
-  
-
-  
-
+    
   useEffect(() => {
     if (selectedAudio) {
       const audio = document.createElement('audio');
@@ -145,7 +142,6 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
     }
   };
 
-  // Audio Send Handler
   const handleAudioSendStatus = () => {
     if (selectedAudio) {
       const statusData = {
@@ -161,7 +157,6 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
       if (onBack) onBack();
     }
   };
-
 
   const handleVideoSendStatus = () => {
       if (selectedVideo) {
@@ -304,13 +299,9 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
         </div>
       );
     }
-
-    // if user cancelled selection, simply render nothing (back to menu)
     return null;
   }
 
-
-  // VIDEO: show preview only when video selected and validated
   if (selectedOption === 'video') {
     if (selectedVideo && isVideoValid) {
       return (
@@ -330,7 +321,7 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
             </button>
 
             <button onClick={toggleMute} className="text-white p-2">
-              {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+              {isMuted ? <BellOff className="w-6 h-6" /> : <Bell className="w-6 h-6" />}
             </button>
           </div>
           <div className="flex items-start mt-8 justify-center flex-1">
@@ -392,8 +383,6 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
       </div>
       );
     }
-
-    // no preview yet -> user hasn't chosen or cancelled
     return null;
   }
 
@@ -490,12 +479,10 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
     );
   }
 
-  // IMAGES: preserved original flow but direct pick triggers the file input
   if (selectedOption === 'images') {
     if (selectedImage) {
       return <DeviceImages selectedImage={selectedImage} onBack={handleBack} onStatusSent={onStatusSent} />;
     }  
-    // if no image selected (user cancelled), go back to main UI
     return null;
   }
 
@@ -605,7 +592,6 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
       </div>
     );
   }
-
   return null;
 };
 

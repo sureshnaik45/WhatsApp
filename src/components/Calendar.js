@@ -1,18 +1,31 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import React, { useState,  useEffect, useRef } from 'react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Edit3, X, Trash2, MoreVertical } from 'lucide-react';
 
-const Calendar = ({ onBack, birthdays, setBirthdays, onDateClick, onAvatarClick }) => {
+const Calendar = ({ onBack, birthdays, setBirthdays, userPhoto, onAvatarClick, onOpenSettings }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [showRemoveMenu, setShowRemoveMenu] = useState(null);
+  const [showDatePopup, setShowDatePopup] = useState(null);
+  const [noteText, setNoteText] = useState('');
+  const [viewingNote, setViewingNote] = useState(null);
+  const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
-  
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
+
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  
+
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -22,17 +35,8 @@ const Calendar = ({ onBack, birthdays, setBirthdays, onDateClick, onAvatarClick 
     const startingDayOfWeek = firstDay.getDay();
     
     const days = [];
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
-    }
-    
-    // Add days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(day);
-    }
-    
+    for (let i = 0; i < startingDayOfWeek; i++) { days.push(null); }
+    for (let day = 1; day <= daysInMonth; day++) { days.push(day); }
     return days;
   };
   
@@ -46,62 +50,127 @@ const Calendar = ({ onBack, birthdays, setBirthdays, onDateClick, onAvatarClick 
   
   const formatDateKey = (day) => {
     if (!day) return null;
+    const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    return `${month}-${day}`;
+    return `${year}-${month}-${day}`;
   };
   
-  const getBirthdaysForDay = (day) => {
+  const getEventsForDay = (day) => {
     const dateKey = formatDateKey(day);
     return birthdays[dateKey] || [];
   };
 
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowRemoveMenu(null);
-      }
-    };
+  const handleSetMyBirthday = () => {
+    const dateKey = formatDateKey(showDatePopup);
+    const existingUserBirthdayKey = Object.keys(birthdays).find(key => 
+      birthdays[key].some(person => person.id === 'user' && person.type === 'birthday')
+    );
     
-    // Add event listener only when a menu is open
-    if (showRemoveMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
+    let newBirthdays = { ...birthdays };
+
+    if (existingUserBirthdayKey) {
+      newBirthdays[existingUserBirthdayKey] = newBirthdays[existingUserBirthdayKey].filter(person => !(person.id === 'user' && person.type === 'birthday'));
+      if (newBirthdays[existingUserBirthdayKey].length === 0) {
+        delete newBirthdays[existingUserBirthdayKey];
+      }
     }
     
-    // Clean up the event listener
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+    newBirthdays[dateKey] = [...(newBirthdays[dateKey] || []), { 
+        id: 'user', 
+        name: 'You', 
+        avatar: userPhoto,
+        type: 'birthday'
+    }];
+    
+    setBirthdays(newBirthdays);
+    setShowDatePopup(null);
+  };
+
+  const handleAddNote = () => {
+    if (noteText.trim() === '') return;
+
+    const dateKey = formatDateKey(showDatePopup);
+    const newNote = {
+      id: `note-${Date.now()}`,
+      name: noteText,
+      author: 'You',
+      avatar: userPhoto,
+      type: 'note'
     };
-  }, [showRemoveMenu]);
+
+    setBirthdays(prev => ({
+      ...prev,
+      [dateKey]: [...(prev[dateKey] || []), newNote]
+    }));
+
+    setShowDatePopup(null);
+    setNoteText('');
+  };
+
+  const handleDeleteNote = (noteId) => {
+    let newBirthdays = { ...birthdays };
+    let noteFoundAndDeleted = false;
+
+    // Find the note across all dates and remove it
+    for (const dateKey in newBirthdays) {
+      const originalLength = newBirthdays[dateKey].length;
+      newBirthdays[dateKey] = newBirthdays[dateKey].filter(event => event.id !== noteId);
+      
+      // If an item was removed, mark it and check if the date array is now empty
+      if (newBirthdays[dateKey].length < originalLength) {
+        noteFoundAndDeleted = true;
+        if (newBirthdays[dateKey].length === 0) {
+          delete newBirthdays[dateKey];
+        }
+        break; // Exit loop once note is found and deleted
+      }
+    }
+
+    if (noteFoundAndDeleted) {
+      setBirthdays(newBirthdays);
+    }
+    setViewingNote(null); // Close the popup
+  };
+
+  const userBirthdayExists = Object.values(birthdays).flat().some(p => p.id === 'user' && p.type === 'birthday');
   
-  const renderAvatarStack = (birthdayList, day) => {
+  const renderAvatarStack = (eventList, position) => {
+    const filteredEvents = eventList.filter(event => event.type === position);
+
+    if (filteredEvents.length === 0) return null;
+
+    const placementClass = position === 'birthday' ? 'top-1 left-1' : 'bottom-1 right-1';
+      
     return (
-      <div className="absolute -top-1 -right-1 flex">
-        {birthdayList.slice(0, 2).map((person, index) => (
+      <div className={`absolute ${placementClass} flex`}>
+        {filteredEvents.slice(0, 2).map((event, index) => (
           <div
-            key={person.id}
-            className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs text-white border-2 border-white cursor-pointer"
-            style={{ marginLeft: index > 0 ? '-8px' : '0', zIndex: birthdayList.length - index }}
+            key={event.id}
+            className={`relative w-6 h-6 rounded-full flex items-center justify-center text-xs cursor-pointer overflow-hidden ${event.type === 'note' ? 'bg-gray-200' : 'bg-gray-200'}`}
+            style={{ marginLeft: index > 0 ? '-10px' : '0', zIndex: eventList.length - index }}
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Birthday person:', person.name);
+              if (event.type === 'birthday' && onAvatarClick) {
+                onAvatarClick(event);
+              }
+              if (event.type === 'note') {
+                setViewingNote(event);
+              }
             }}
           >
-            {person.avatar}
+            {typeof event.avatar === 'string' && event.avatar.length > 5 ? (
+              <img src={event.avatar} alt={event.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className={event.type === 'note' ? 'text-white' : ''}>{event.avatar}</span>
+            )}
+
+            {event.type === 'note' && (
+              <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-px shadow">
+                <Edit3 size={12} className="text-red-700" />
+              </div>
+            )}
           </div>
         ))}
-        
-        {/* Always show + icon for adding more birthdays */}
-        <div
-          className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-white border-2 border-white cursor-pointer"
-          style={{ marginLeft: birthdayList.length > 0 ? '-8px' : '0' }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onDateClick(formatDateKey(day));
-          }}
-        >
-          <Plus size={12} />
-        </div>
       </div>
     );
   };
@@ -111,169 +180,129 @@ const Calendar = ({ onBack, birthdays, setBirthdays, onDateClick, onAvatarClick 
   return (
     <div className={`h-full flex flex-col bg-white`}>
       <div className="bg-green-600 text-white px-4 py-3"> 
-        <div className="flex items-center space-x-3">
-          <button onClick={onBack} className="text-white">
-            <ArrowLeft size={24} />
-          </button>
-          <h1 className="text-lg font-medium">Calendar</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <button onClick={onBack} className="text-white"><ArrowLeft size={24} /></button>
+            <h1 className="text-lg font-medium">Calendar</h1>
+          </div>
+          
+          <div className="relative" ref={menuRef}>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(!showMenu);
+              }}
+              className="text-white p-2 rounded-full hover:bg-black/10"
+            >
+              <MoreVertical size={20} />
+            </button>
+            
+            {showMenu && (
+              <div className="absolute top-full right-0 mt-2 w-36 bg-gray-800 text-white rounded-md shadow-lg z-20">
+                <button
+                  className="w-full text-left px-4 py-3  text-sm"
+                  onClick={() => {
+                    onOpenSettings();
+                    setShowMenu(false);
+                  }}
+                >
+                  Calendar Privacy
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="mb-6">
-          <h3 className={`text-sm font-medium mb-3 text-gray-500`}>
-            ADD BIRTHDAY
-          </h3>
-        </div>
-        
         <div className="flex items-center justify-between mb-6">
           <button 
-            onClick={() => navigateMonth(-1)}
-            className={`p-2 rounded-full hover:bg-gray-100`}
+            onClick={() => navigateMonth(-1)} 
+            disabled={currentDate.getMonth() === 0}
+            className={`p-2 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <ChevronLeft size={20} />
           </button>
-          
-          <h2 className={`text-lg font-semibold text-gray-600`}>
-            {months[currentDate.getMonth()]}
-          </h2>
-          
+          <h2 className={`text-lg font-semibold text-gray-600`}>{months[currentDate.getMonth()]} {currentDate.getFullYear()}</h2>
           <button 
-            onClick={() => navigateMonth(1)}
-            className={`p-2 rounded-full hover:bg-gray-100`}
+            onClick={() => navigateMonth(1)} 
+            disabled={currentDate.getMonth() === 11}
+            className={`p-2 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <ChevronRight size={20} />
           </button>
         </div>
         
         <div className="grid grid-cols-7 gap-1 mb-2">
-          {daysOfWeek.map(day => (
-            <div key={day} className={`text-center text-xs font-medium py-2 text-gray-500`}>
-              {day}
-            </div>
-          ))}
+          {daysOfWeek.map(day => <div key={day} className={`text-center text-xs font-medium py-2 text-gray-500`}>{day}</div>)}
         </div>
 
-        {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-1">
           {days.map((day, index) => {
-            const birthdayList = getBirthdaysForDay(day);
-            const hasEvents = birthdayList.length > 0;
-            
+            const eventList = getEventsForDay(day);
             return (
               <div
                 key={index}
-                className={`
-                  relative aspect-square flex items-center justify-center text-sm cursor-pointer rounded-lg
-                  ${!day ? 'invisible' : ''}
-                  ${hasEvents ? 'bg-green-50' : ''}
-                  ${hasEvents ? 'bg-green-50 hover:bg-gray-100' : 'hover:bg-gray-100'}
-                  ${'text-gray-900'}
-                `}
-                onClick={() => day && onDateClick(formatDateKey(day))}
+                className={`relative aspect-square flex items-start justify-end p-1 text-sm cursor-pointer rounded-lg border border-gray-200 ${!day ? 'invisible' : ''} hover:bg-gray-100 transition-colors`}
+                onClick={() => day && setShowDatePopup(day)}
               >
-                {day}
-                {renderAvatarStack(birthdayList, day)}
+                <span>{day}</span>
+                {renderAvatarStack(eventList, 'birthday')}
+                {renderAvatarStack(eventList, 'note')}
               </div>
             );
           })}
         </div>
-
-        {/* Upcoming Birthdays */}
-        <div className="mt-8">
-          <h3 className={`text-sm font-medium mb-3 text-gray-500`}>
-            THIS MONTH'S BIRTHDAYS
-          </h3>      
-
-          {Object.entries(birthdays)
-            .filter(([dateKey]) => {
-              const [month] = dateKey.split('-').map(Number);
-              return month === currentDate.getMonth(); // Remove year check
-            })
-            .sort(([a], [b]) => {
-              const dayA = parseInt(a.split('-')[1]); // Change index to 1 for day
-              const dayB = parseInt(b.split('-')[1]);
-              return dayA - dayB;
-            })
-            .map(([dateKey, birthdayList]) => {
-              const day = parseInt(dateKey.split('-')[1]); // Change index to 1
-              return birthdayList.map((person, index) => (
-                <div
-                  key={`${dateKey}-${person.id}`}
-                  className="relative flex items-center p-3 rounded-lg cursor-pointer mb-2 hover:bg-gray-50 bg-gray-50"
-                  onClick={() => {
-                    // Navigate to chat with this person
-                    if (onAvatarClick) {
-                      onAvatarClick(person);
-                    }
-                  }}
-                >
-                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-2xl mr-3">
-                    {person.avatar}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">
-                      {person.name}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {months[currentDate.getMonth()]} {day}
-                    </p>
-                  </div>
-                  {/* Three dots menu */}
-                  
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowRemoveMenu(prev => 
-                          prev?.personId === person.id ? null : { dateKey, personId: person.id }
-                        );
-                      }}
-                      className="text-gray-400 hover:text-gray-600 p-2"
-                    >
-                      ⋯
-                    </button>
-                  
-                  {showRemoveMenu?.personId === person.id && (
-            <div ref={menuRef} className="absolute top-0 right-0 pt-2 bg-white rounded-lg shadow-xl border p-1 z-50">
-              <button 
-                className="w-full text-left px-3 py-2  text-red-600"
-                onClick={(e) => {
-                  // Remove birthday
-                  e.stopPropagation();
-                  setBirthdays(currentBirthdays => {
-                    const updatedList = currentBirthdays[dateKey].filter(p => p.id !== person.id);
-                    const newBirthdays = { ...currentBirthdays };
-                    if (updatedList.length > 0) {
-                      newBirthdays[dateKey] = updatedList;
-                    } else {
-                      delete newBirthdays[dateKey]; // Remove the date key if no birthdays are left on that day
-                    }
-                    return newBirthdays;
-                  });
-                  setShowRemoveMenu(null);
-                }}
-              >
-                Remove Birthday
-              </button>
-            </div>
-          )}
-          
-                </div>
-              ));
-            })
-          }
-
-          
-          {Object.entries(birthdays).filter(([dateKey]) => {
-            const [month] = dateKey.split('-').map(Number);
-            return month === currentDate.getMonth();
-          }).length === 0 && (
-            <p className={`text-sm text-gray-500 mt-2`}>
-              No birthdays this month
-            </p>
-          )}
-        </div>
       </div>
+
+      {showDatePopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowDatePopup(null)}>
+          <div className="relative bg-white rounded-lg w-80 shadow-xl p-4" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowDatePopup(null)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"><X size={20}/></button>
+            <h3 className="font-semibold text-center mb-4">{months[currentDate.getMonth()]} {showDatePopup}, {currentDate.getFullYear()}</h3>
+            <div className="space-y-3">
+              <button onClick={handleSetMyBirthday} className="w-full text-left px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm">{userBirthdayExists ? 'Update your birthday' : 'Set your birthday'}</button>
+              <div className="text-sm">
+                <p className="font-medium text-gray-700 mb-2">Something special today?</p>
+                <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} maxLength="50" placeholder="Max 50 characters..." className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"/>
+                <button onClick={handleAddNote} className="w-full mt-2 px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600">Add Note</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingNote && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setViewingNote(null)}>
+          <div className="relative bg-white rounded-lg w-80 shadow-xl p-6" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setViewingNote(null)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"><X size={20}/></button>
+            <div className="flex items-start space-x-4">
+              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+                {typeof viewingNote.avatar === 'string' && viewingNote.avatar.length > 5 ? (
+                  <img src={viewingNote.avatar} alt={viewingNote.author} className="w-full h-full object-cover" />
+                ) : (
+                  viewingNote.avatar
+                )}
+              </div>
+              <div>
+                <p className="font-semibold">{viewingNote.author}</p>
+                <p className="text-gray-700">{viewingNote.name}</p>
+              </div>
+            </div>
+            {/* Delete button only shows if you are the author */}
+            {viewingNote.author === 'You' && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => handleDeleteNote(viewingNote.id)}
+                  className="w-full flex items-center justify-center space-x-2 px-2 py-3 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

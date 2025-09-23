@@ -1,4 +1,3 @@
-// src/components/VideoCallWindow.js
 import React, { useEffect, useRef, useState } from "react";
 import { Camera } from "@mediapipe/camera_utils";
 import {
@@ -25,18 +24,17 @@ const VideoCallWindow = ({
 
   const [showError, setShowError] = useState(false);
 
-useEffect(() => {
-  if (error) {
-    setShowError(true);
-    const timer = setTimeout(() => {
-      setShowError(false);
-    }, 5000);
+  useEffect(() => {
+    if (error) {
+      setShowError(true);
+      const timer = setTimeout(() => {
+        setShowError(false);
+      }, 5000);
 
-    return () => clearTimeout(timer);
-  }
-}, [error]);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
-  // controlled vs internal minimized
   const isControlled = typeof minimized !== "undefined";
   const [internalMinimized, setInternalMinimized] = useState(false);
   const isMin = isControlled ? minimized : internalMinimized;
@@ -61,9 +59,7 @@ useEffect(() => {
   const canvasRef = useRef(null);
   const segInstanceRef = useRef(null);
   const cameraRef = useRef(null);
-  const loadedBackgroundRef = useRef(null); // ✨ NEW: Ref to hold the loaded background image element
-
-  // Realistic-ish preset backgrounds
+  const loadedBackgroundRef = useRef(null);
   const backgroundImages = {
     office:
       "data:image/svg+xml;base64," +
@@ -86,33 +82,24 @@ useEffect(() => {
           `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'><defs><linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#a2d0f0'/><stop offset='100%' stop-color='#e0f2ff'/></linearGradient><filter id='blur'><feGaussianBlur stdDeviation='5'/></filter></defs><rect width='800' height='600' fill='url(#sky)'/><g filter='url(#blur)' opacity='0.7'><path d='M-50 600 C 100 400, 200 550, 400 450 C 600 350, 700 500, 850 400 L 850 600 Z' fill='#228B22'/><path d='M-50 600 C 150 450, 250 580, 450 500 C 650 420, 750 520, 850 450 L 850 600 Z' fill='#006400'/></g><g opacity='0.9'><path d='M50 600 L 100 300 L 150 600 Z' fill='#2E8B57'/><path d='M150 600 L 200 250 L 250 600 Z' fill='#3CB371'/><path d='M600 600 L 650 200 L 700 600 Z' fill='#2E8B57'/></g></svg>`
         ),
   };
-  
-  // ✨ NEW: Effect to load the background image whenever it changes
+
   useEffect(() => {
     if (selectedBackground && selectedBackground !== "none") {
       const img = new Image();
-      // Determine the source from presets or a data URL
       img.src = selectedBackground.startsWith("data:image")
         ? selectedBackground
         : backgroundImages[selectedBackground];
-      
-      // Once loaded, store the image element in our ref
       img.onload = () => {
         loadedBackgroundRef.current = img;
       };
       img.onerror = () => {
-        // Handle error if image fails to load
         loadedBackgroundRef.current = null;
       }
     } else {
-      // If no background, clear the ref
       loadedBackgroundRef.current = null;
     }
-    // This effect runs only when the user picks a new background
   }, [selectedBackground]);
 
-
-  // init segmentation (MediaPipe)
   useEffect(() => {
     segInstanceRef.current = new SelfieSegmentation({
       locateFile: (file) =>
@@ -134,10 +121,8 @@ useEffect(() => {
         } catch (e) {}
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 🎨 CHANGED: Simplified 'onSegResults' to use the pre-loaded image
   const onSegResults = (results) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -146,30 +131,18 @@ useEffect(() => {
     const video = localVideoRef.current;
     const mask = results.segmentationMask;
     if (!video || !mask) return;
-    
-    // Match canvas dimensions to video
     if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
     }
-
-    // Use an offscreen canvas for compositing
     const offscreenCanvas = document.createElement("canvas");
     offscreenCanvas.width = canvas.width;
     offscreenCanvas.height = canvas.height;
     const offCtx = offscreenCanvas.getContext("2d");
-    
-    // Step 1: Draw the segmentation mask to the offscreen canvas
     offCtx.drawImage(mask, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-    
-    // Step 2: Use "source-in" to clip the video to the mask shape (keeps only the person)
     offCtx.globalCompositeOperation = "source-in";
     offCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-    
-    // Now, let's draw to the main, visible canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Step 3: Draw the pre-loaded background image first (if it exists)
     if (loadedBackgroundRef.current) {
         ctx.drawImage(loadedBackgroundRef.current, 0, 0, canvas.width, canvas.height);
     } else {
@@ -177,13 +150,9 @@ useEffect(() => {
         // ctx.fillStyle = "#000000";
         // ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-    
-    // Step 4: Draw the person (from the offscreen canvas) on top of the background
     ctx.drawImage(offscreenCanvas, 0, 0, canvas.width, canvas.height);
 };
 
-
-  // media initialization
   useEffect(() => {
     let runningCamera = null;
     let localStream = null;
@@ -214,7 +183,7 @@ useEffect(() => {
           runningCamera = new Camera(localVideoRef.current, {
             onFrame: async () => {
               try {
-                if(localVideoRef.current.readyState >= 3) { // Ensure video is ready
+                if(localVideoRef.current.readyState >= 3) {
                    await segInstanceRef.current.send({ image: localVideoRef.current });
                 }
               } catch (e) { /* ignore frame errors */ }
@@ -247,18 +216,13 @@ useEffect(() => {
       }
       setMediaStream(null);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callType, isVideoOn]);
-
-  // call timer
   useEffect(() => {
     if (!isConnecting) {
       const t = setInterval(() => setCallDuration((s) => s + 1), 1000);
       return () => clearInterval(t);
     }
   }, [isConnecting]);
-
-  // toggle mute
   const toggleMute = () => {
     if (!mediaStream) {
       setIsMuted((s) => !s);
@@ -272,8 +236,6 @@ useEffect(() => {
       setIsMuted(!isMuted);
     }
   };
-
-  // toggle camera
   const toggleVideo = async () => {
      if (callType === "audio" && !isVideoOn) {
       try {
@@ -323,24 +285,19 @@ useEffect(() => {
     onEndCall && onEndCall();
   };
 
-  const onPiPClick = () => setMin(false);
   const formatDuration = (s) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
-
-  // UI
-  // ✨ REPLACE YOUR ENTIRE RETURN BLOCK WITH THIS ✨
   return (
     <div
       className={`fixed ${isMin ? "bottom-4 right-4 w-44 h-40" : "inset-0"} bg-black z-50 rounded-lg overflow-hidden shadow-2xl`}
       style={{ transition: "all .18s ease" }}
     >
-      {/* minimized PiP */}
       {isMin ? (
         <button
-          onClick={handleMaximize} // Use the correct handler
+          onClick={handleMaximize}
           className="w-full h-full p-1 flex items-center justify-center bg-black/60 text-white focus:outline-none"
         >
           <div className="flex flex-col items-center">
@@ -349,15 +306,10 @@ useEffect(() => {
           </div>
         </button>
       ) : (
-        // full / large UI
         <>
           <div className="w-full h-full relative bg-black">
-            
-            {/* ==================== FIX #1: THE MAIN DISPLAY LOGIC ==================== */}
-            {/* This condition now ONLY checks if isVideoOn is true. */}
             {isVideoOn ? (
               <>
-                {/* This is the video view with the canvas */}
                 <canvas
                   ref={canvasRef}
                   className="w-full h-full object-cover transform scale-x-[-1]"
@@ -371,7 +323,6 @@ useEffect(() => {
                 />
               </>
             ) : (
-              // This is the audio-only view with the avatar
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-900 to-black text-white">
                 <div className="text-center">
                   <div className="text-6xl mb-3">{contact?.avatar}</div>
@@ -382,21 +333,19 @@ useEffect(() => {
                 </div>
               </div>
             )}
-            
-            {/* Conditional remote user and status text */}
-            {isVideoOn && ( // This also now correctly depends only on isVideoOn
-                 <>
-                    <div className="absolute bottom-52 right-4 w-36 h-28 rounded-lg overflow-hidden border-2 border-white shadow-lg flex flex-col items-center justify-center bg-black/70 text-white">
-                      <div className="text-2xl">{contact?.avatar || "👤"}</div>
-                      <p className="text-xs mt-1">{contact?.name || "Remote User"}</p>
-                    </div>
+            {isVideoOn && (
+              <>
+                <div className="absolute bottom-52 right-4 w-36 h-28 rounded-lg overflow-hidden border-2 border-white shadow-lg flex flex-col items-center justify-center bg-black/70 text-white">
+                  <div className="text-2xl">{contact?.avatar || "👤"}</div>
+                  <p className="text-xs mt-1">{contact?.name || "Remote User"}</p>
+                </div>
 
-                    <div className="absolute bottom-40 left-1/2 transform -translate-x-1/2 text-center text-white">
-                      <p className="text-sm">
-                        {isConnecting ? "Connecting..." : `Connected • ${formatDuration(callDuration)}`}
-                      </p>
-                    </div>
-                 </>
+                <div className="absolute bottom-40 left-1/2 transform -translate-x-1/2 text-center text-white">
+                  <p className="text-sm">
+                    {isConnecting ? "Connecting..." : `Connected • ${formatDuration(callDuration)}`}
+                  </p>
+                </div>
+              </>
             )}
 
             {showError && (
@@ -406,8 +355,6 @@ useEffect(() => {
                 </div>
               </div>
             )}
-            
-            {/* background picker overlay */}
             {showBackgrounds && isVideoOn && (
               <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-40">
                 <div className="flex w-64 flex-wrap justify-center gap-2 rounded-lg bg-gray-800 p-3 text-white shadow-lg">
@@ -462,8 +409,6 @@ useEffect(() => {
                 </div>
               </div>
             )}
-
-            {/* Back arrow (minimize) */}
             <button
               onClick={onBack}
               className="absolute top-4 left-4 z-20 p-2 bg-black/30 rounded-full backdrop-blur"
@@ -471,8 +416,6 @@ useEffect(() => {
             >
               <ArrowLeft className="w-6 h-6 text-white" />
             </button>
-
-            {/* Controls */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
               <div className="flex justify-center space-x-5">
                 <button
@@ -500,9 +443,6 @@ useEffect(() => {
                     <VideoOff className="w-5 h-5 text-white" />
                   )}
                 </button>
-                
-                {/* ==================== FIX #2: THE BACKGROUND BUTTON LOGIC ==================== */}
-                {/* This condition also now ONLY checks if isVideoOn is true. */}
                 {isVideoOn && (
                   <button
                     onClick={() => setShowBackgrounds((s) => !s)}

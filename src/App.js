@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Users, Search, MoreVertical, ArrowLeft, Camera, Volume2, ChevronDown, ChevronRight, Settings as SettingsIcon, UserPlus, UserMinus, Trash2, VolumeX } from 'lucide-react';
+import { MessageCircle, Users, Search, Phone, MoreVertical, ArrowLeft, Camera, Bell, ChevronDown, ChevronRight, Settings as SettingsIcon, UserPlus, UserMinus, Trash2, BellOff } from 'lucide-react';
 import ChatItem from './components/ChatItem.js';
-import CategoryDetail from './components/CategoryDetail.js';
+import NewGroupModal from './components/NewGroupModal.js';
+import CategoryInfo from './components/CategoryInfo.js';
 import StatusItem from './components/StatusItem.js';
 import CallItem from './components/CallItem.js';
 import NewCategoryModal from './components/NewCategoryModal.js';
@@ -29,9 +30,9 @@ import PinnedMessages from './components/PinnedMessages.js';
 import Calendar from './components/Calendar.js';
 import UserProfile from './components/UserProfile.js';
 import GroupInfo from './components/GroupInfo.js';
-import PrivacyScreen from './components/PrivacyScreen.js';
 import About from './components/About.js';
 import './App.css';
+import CalendarSettings from './components/CalendarSettings.js';
 
 const App = () => {
   const [showAddMemberModal, setShowAddMemberModal] = useState(null);
@@ -39,6 +40,7 @@ const App = () => {
   const [addMemberSearchQuery, setAddMemberSearchQuery] = useState('');
   const [selectedContactsForAdd, setSelectedContactsForAdd] = useState([]);
   const [activeTab, setActiveTab] = useState('chats');
+  const [showCalendarSettings, setShowCalendarSettings] = useState(false);
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showChatInfo, setShowChatInfo] = useState(false);
@@ -50,6 +52,9 @@ const App = () => {
   const [showStatusSearch, setShowStatusSearch] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [videoCallContact, setVideoCallContact] = useState(null);
+  const [showCategoriesMenu, setShowCategoriesMenu] = useState(false);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showCallsMenu, setShowCallsMenu] = useState(false);
   const [categories, setCategories] = useState(categoriesData);
   const [userHasStatus, setUserHasStatus] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -59,6 +64,7 @@ const App = () => {
   const [activeChat, setActiveChat] = useState(null);
   const [showMyStatusViewer, setShowMyStatusViewer] = useState(false);
   const [activeStatusViewer, setActiveStatusViewer] = useState(null);
+  const [showNewGroupModal, setShowNewGroupModal] = useState(false);
   const [statuses, setStatuses] = useState(statusData);
   const [currentCall, setCurrentCall] = useState(null);
   const [callError, setCallError] = useState(null);
@@ -80,23 +86,24 @@ const App = () => {
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedMembersForRemove, setSelectedMembersForRemove] = useState([]);
+  const [chatPinnedMessages, setChatPinnedMessages] = useState({}); 
   const [showAbout, setShowAbout] = useState(false);
+  const [showCategoryInfo, setShowCategoryInfo] = useState(false);
+  const [userPhoto, setUserPhoto] = useState( '👤');
   const [birthdays, setBirthdays] = useState({
-    '8-17': [{ 
-      id: 1, 
-      name: 'Mom', 
-      avatar: '👩‍💼'
-    }]
-  }); 
+    // August is month index 7
+    '2025-7-17': [{ id: 1, name: 'Mom', avatar: '👩‍💼', type: 'birthday' }],
+    '2025-7-30': [{ id: 2, name: 'Dad', avatar: '👨‍🦳', type: 'birthday' }],
+    '2025-8-10': [{ id: 3, name: 'Sister', avatar: '👩‍🎓', type: 'birthday' }],
+    '2025-8-27': [{ id: 4, name: 'Lisa Chen', avatar: '👩‍🔬', type: 'birthday' }],
+    '2025-8-15': [{ id: 'note-1', name: 'Graduation Day! 🎓', author: 'You', avatar: userPhoto, type: 'note' }],
+    '2025-8-20': [{ id: 'note-2', name: 'Our family blessed with a baby girl', author: 'Sister', avatar: '👩‍🎓', type: 'note' }],
+    '2025-8-25': [{ id: 'note-3', name: 'Promoted as Product Manager in WhatsApp!', author: 'Alex Johnson', avatar: '🧑‍💻', type: 'note' }]
+  });
   const [showBackupToast, setShowBackupToast] = useState(false);
   const [backupProgress, setBackupProgress] = useState(0);
-
-    
-  
-  // State for chats to allow for muting, deleting, etc.
   const [chats, setChats] = useState(chatsData); 
   const [expandedCategories, setExpandedCategories] = useState({ family: true });
-  // Update the initial state to include existing starred messages:
   const [globalStarredMessages, setGlobalStarredMessages] = useState(() => {
     const starredMessages = [];
     chatsData.forEach(chat => {
@@ -145,6 +152,17 @@ const App = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [menuRef]);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.more-menu')) {
+        setShowCategoriesMenu(false);
+        setShowStatusMenu(false);
+        setShowCallsMenu(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -170,7 +188,24 @@ const App = () => {
       setIsCallMinimized(false);
       setCallError("You can't make a call while another call is ongoing");
       return;
-    }
+    } 
+    const newCallLog = {
+      id: Date.now(),
+      name: contact.name,
+      avatar: contact.avatar,
+      type: callType,
+      direction: 'outgoing',
+      time: new Date().toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      }),
+      date: new Date().toLocaleDateString(),
+      duration: Math.floor(Math.random() * 300) + 30,
+      status: 'completed'
+    };    
+
+    setCallLogs(prev => [newCallLog, ...prev]);
     setCurrentCall({ contact, callType });
     setShowVideoCall(true);
     setIsCallMinimized(false);
@@ -262,7 +297,7 @@ const App = () => {
     setShowStatusSearch(false);
   };
 
-  const closeChatInfo = () => setShowChatInfo(false);
+  const [callLogs, setCallLogs] = useState(callsData);
   const goBackToCategories = () => setSelectedCategory(null);
   const closeContactSelector = () => setShowContactSelector(false);
   const openGlobalSearch = () => setShowGlobalSearch(true);
@@ -274,9 +309,11 @@ const App = () => {
   const closeStatusSearch = () => setShowStatusSearch(false);
   const openSettings = () => setShowSettings(true);
   const closeSettings = () => setShowSettings(false);
-  const toggleChatsMenu = () => setShowChatsMenu(!showChatsMenu);
   const closeChatsMenu = () => setShowChatsMenu(false);
-  const handleNewGroup = () => alert('New Group functionality');
+  const handleNewGroup = () => {
+    setShowNewGroupModal(true);
+    closeChatsMenu();
+  };
   const handleNewCategory = () => setShowNewCategoryModal(true);
 
   const handleShowContactSelector = (mode, category = null, existingMembers = []) => {
@@ -298,10 +335,9 @@ const App = () => {
   }
 };
 
-  const handleStatusSettingsClick = () => setShowStatusSettings(true);
-
   const getChatsByCategory = (categoryId) => {
-    return chats.filter(chat => chat.category === categoryId && !chat.isGroup);
+    console.log(`Getting chats for category ${categoryId}:`, chats.filter(chat => chat.category === categoryId));
+    return chats.filter(chat => chat.category === categoryId);
   };
   const getTotalUnreadForCategory = (categoryId) => {
     return getChatsByCategory(categoryId).reduce((total, chat) => total + (chat.isMuted ? 0 : chat.unread), 0);
@@ -309,11 +345,15 @@ const App = () => {
 
 
   const uncategorizedChats = chats.filter(chat => !chat.category);
-  const allChatsForDisplay = chats;
   const unreadChatsCount = uncategorizedChats.filter(chat => chat.unread > 0 && !chat.isMuted).length;
   const unreadCategoriesCount = categories.filter(category => {
     return getChatsByCategory(category.id).some(chat => chat.unread > 0 && !chat.isMuted);
   }).length;
+
+  const handleCreateGroup = (groupData) => {
+    setChats(prevChats => [groupData, ...prevChats]);
+    setShowNewGroupModal(false);
+  };
 
   const handleCreateCategory = (categoryName) => {
     if (categoryName.trim()) {
@@ -335,13 +375,6 @@ const App = () => {
       ...prev,
       [categoryId]: !prev[categoryId]
     }));
-  };
-
-
-  const addMemberToCategory = (categoryId) => {
-    const category = categories.find(c => c.id === categoryId);
-    setShowAddMemberModal(category);
-    setOpenCategorySettings(null);
   };
 
   const handleContactSelection = (chat) => {
@@ -376,11 +409,33 @@ const App = () => {
     setOpenCategorySettings(null);
   };
 
+  const handleRemoveMembersFromCategory = (categoryId, membersToRemove) => {
+    const memberNamesToRemove = membersToRemove.map(member => member.name);
+    setCategories(prevCategories =>
+      prevCategories.map(cat =>
+        cat.id === categoryId
+          ? { ...cat, contacts: cat.contacts.filter(cName => !memberNamesToRemove.includes(cName)) }
+          : cat
+      )
+    );
+
+    setChats(prevChats =>
+      prevChats.map(chat =>
+        memberNamesToRemove.includes(chat.name)
+          ? { ...chat, category: null } // Set category to null so it reappears in Chats
+          : chat
+      )
+    );
+    setShowRemoveMemberModal(null);
+    setSelectedMembersForRemove([]);
+  };
+
   const showOverlay = showGlobalSearch || showContactSelector || showMyStatusManager || 
                    showStatusSettings || showStatusViews || showStatusSearch || 
                    activeChat || selectedCategory || (showVideoCall && !isCallMinimized) || showMyStatusViewer
                    || showSettings || showChatSettings || showIndividualBackup || showStarredMessages || showPinnedMessages
-                   || showCalendar || showBirthdaySelector || showBackupToast || showUserProfile || showChatInfo ||  showGroupInfo;
+                   || showCalendar || showBirthdaySelector || showBackupToast || showUserProfile || showAbout ||
+                   showAddMemberModal || showRemoveMemberModal || showCalendarSettings;
 
 
 
@@ -388,7 +443,11 @@ const App = () => {
     <div className={`max-w-md mx-auto mt-2 shadow-2xl rounded-lg overflow-hidden relative bg-white`} 
       style={{ height: '600px' }}
     >      
-      <PrivacyScreen />
+      <NewGroupModal 
+        isOpen={showNewGroupModal}
+        onClose={() => setShowNewGroupModal(false)}
+        onCreate={handleCreateGroup}
+      />
       {showVideoCall && currentCall && (
         <VideoCallWindow
           contact={currentCall.contact}
@@ -401,6 +460,15 @@ const App = () => {
         />
       )}
 
+      {showCalendarSettings && (
+        <CalendarSettings 
+          onBack={() => {
+            setShowCalendarSettings(false);
+            setShowCalendar(true); // Go back to the calendar
+          }}
+        />
+      )}              
+
       {showCallsSearch && ( 
         <CallsSearch 
           onBack={() => setShowCallsSearch(false)} 
@@ -411,6 +479,7 @@ const App = () => {
       {showSettings && ( 
         <Settings 
           onBack={closeSettings} 
+          userPhoto={userPhoto}
           onOpenChatSettings={() => {
             setShowSettings(false);
             setShowChatSettings(true);
@@ -453,6 +522,8 @@ const App = () => {
               setActiveTab('chats');
             }
           }}
+          userPhoto={userPhoto}
+          setUserPhoto={setUserPhoto}
         />
       )}
 
@@ -464,6 +535,7 @@ const App = () => {
           }}
           birthdays={birthdays}
           setBirthdays={setBirthdays}
+          userPhoto={userPhoto}
           onDateClick={(date) => {
             setSelectedDate(date);
             setShowBirthdaySelector(true);
@@ -476,6 +548,10 @@ const App = () => {
               setShowCalendar(false);
               setActiveTab('chats');
             }
+          }}
+          onOpenSettings={() => {
+            setShowCalendar(false);
+            setShowCalendarSettings(true);
           }}
         />
       )}
@@ -525,21 +601,15 @@ const App = () => {
             setShowChatSettings(true);
           }}
           onSelectContact={(contact) => {
-            // Show progress toast
             setShowBackupToast(true);
             setBackupProgress(0);
-            
-            // Simulate backup progress
             const progressInterval = setInterval(() => {
               setBackupProgress(prev => {
                 if (prev >= 100) {
                   clearInterval(progressInterval);
-                  // Show success message after 500ms
                   setTimeout(() => {
                     setShowBackupToast(false);
                     alert('Chat backup successful!');
-                    
-                    // Generate backup messages and open chat
                     const backupMessages = [
                       { id: Date.now() - 6, text: `Hey ${contact.name}, how are you doing?`, time: '9:00 AM', fromSelf: true, starred: false, status: 'read', reactions: {}, readAt: null, deliveredAt: 'Today, 9:00 AM' },
                       { id: Date.now() - 5, text: "I'm doing great! Just finished my morning workout.", time: '9:05 AM', fromSelf: false, starred: false, status: 'delivered', reactions: {}, readAt: null, deliveredAt: 'Today, 9:05 AM' },
@@ -588,13 +658,11 @@ const App = () => {
           onBack={() => setShowStarredMessages(false)}
           starredMessages={globalStarredMessages}
           onMessageClick={(chatName, message) => {
-            // Find the chat and open it
             const targetChat = chats.find(chat => chat.name === chatName);
             if (targetChat) {
               setActiveChat(targetChat);
               setShowStarredMessages(false);
               setActiveTab('chats');
-              // Scroll to message after a delay
               setTimeout(() => {
                 document.getElementById(`msg-${message.id}`)?.scrollIntoView({ 
                   behavior: 'smooth', 
@@ -606,18 +674,30 @@ const App = () => {
         />
       )}
 
+      {showChatInfo && activeChat && !activeChat.isGroup && (
+        <ChatInfo 
+          chat={activeChat} 
+          onBack={() => setShowChatInfo(false)} 
+        />
+      )}
+
+      {showGroupInfo && activeChat &&(
+        <GroupInfo 
+          chat={activeChat}
+          onBack={() => setShowGroupInfo(false)}
+        />
+      )}
+
       {showPinnedMessages && (
         <PinnedMessages 
           onBack={() => setShowPinnedMessages(false)}
           pinnedMessages={globalPinnedMessages}
           onMessageClick={(chatName, message) => {
-            // Find the chat and open it
             const targetChat = chats.find(chat => chat.name === chatName);
             if (targetChat) {
               setActiveChat(targetChat);
               setShowPinnedMessages(false);
               setActiveTab('chats');
-              // Scroll to message after a delay
               setTimeout(() => {
                 document.getElementById(`msg-${message.id}`)?.scrollIntoView({ 
                   behavior: 'smooth', 
@@ -681,43 +761,100 @@ const App = () => {
           </div>
           
           <div className="flex-1 overflow-y-auto" style={{ height: 'calc(600px - 180px)' }}>
-            {chats.filter(chat => 
-              !chat.isGroup && 
-              !showAddMemberModal.contacts.includes(chat.name) &&
-              chat.name.toLowerCase().includes(addMemberSearchQuery.toLowerCase())
-            ).map(chat => {
+            {chats.filter(chat => {
+              // Only show individual contacts (not groups)
+              if (chat.isGroup) return false;
+              
+              // Filter by search query
+              if (!chat.name.toLowerCase().includes(addMemberSearchQuery.toLowerCase())) return false;
+              
+              // Check if contact is already in the CURRENT category being edited
+              if (showAddMemberModal.contacts.includes(chat.name)) return false;
+              
+              return true;
+            }).map(chat => {
               const isSelected = selectedContactsForAdd.find(c => c.id === chat.id);
+              
+              // Check if contact is in another category
+              const existingCategory = categories.find(cat => 
+                cat.id !== showAddMemberModal.id && cat.contacts.includes(chat.name)
+              );
+              
               return (
                 <div key={chat.id} 
-                    onClick={() => handleContactSelection(chat)}
-                    className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                    onClick={() => {
+                      if (existingCategory) {
+                        alert(`${chat.name} is already in the '${existingCategory.name}' category. Remove from there first.`);
+                        return;
+                      }
+                      handleContactSelection(chat);
+                    }}
+                    className={`flex items-center px-4 py-3 cursor-pointer ${
+                      existingCategory ? 'bg-gray-100' : 'hover:bg-gray-50'
+                    }`}>
                   <div className="w-12 h-12 bg-gray-200 rounded-full mr-3 flex items-center justify-center text-xl">
                     {chat.avatar}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-medium">{chat.name}</h3>
+                    <h3 className={`font-medium ${existingCategory ? 'text-gray-400' : 'text-gray-900'}`}>
+                      {chat.name}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {existingCategory ? `In ${existingCategory.name}` : 'Available to add'}
+                    </p>
                   </div>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                    isSelected ? 'bg-green-500 border-green-500' : 'border-gray-300'
-                  }`}>
-                    {isSelected && <div className="w-3 h-3 bg-white rounded-full"></div>}
-                  </div>
+                  {!existingCategory && (
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                      isSelected ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                    }`}>
+                      {isSelected && <div className="w-3 h-3 bg-white rounded-full"></div>}
+                    </div>
+                  )}
                 </div>
               );
             })}
+            
+            {chats.filter(chat => 
+              !chat.isGroup && 
+              chat.name.toLowerCase().includes(addMemberSearchQuery.toLowerCase()) &&
+              !showAddMemberModal.contacts.includes(chat.name)
+            ).length === 0 && (
+              <div className="p-8 text-center text-gray-500">
+                <p>No available contacts to add</p>
+                <p className="text-sm">Search for more contacts or they're already in categories</p>
+              </div>
+            )}
           </div>
           
           {selectedContactsForAdd.length > 0 && (
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t">
               <button 
                 onClick={() => {
-                  setCategories(prev => 
-                    prev.map(cat => 
+                  console.log('Adding members:', selectedContactsForAdd);
+                  
+                  setCategories(prevCategories => {
+                    const updatedCategories = prevCategories.map(cat => 
                       cat.id === showAddMemberModal.id 
                         ? { ...cat, contacts: [...cat.contacts, ...selectedContactsForAdd.map(c => c.name)] }
                         : cat
-                    )
-                  );
+                    );
+                    return updatedCategories;
+                  });
+                  
+                  setChats(prevChats => {
+                    const updatedChats = prevChats.map(chat => 
+                      selectedContactsForAdd.find(sc => sc.id === chat.id)
+                        ? { ...chat, category: showAddMemberModal.id }
+                        : chat
+                    );
+                    return updatedChats;
+                  });
+                  
+                  setExpandedCategories(prev => ({
+                    ...prev,
+                    [showAddMemberModal.id]: true
+                  }));
+                  
                   setShowAddMemberModal(null);
                   setSelectedContactsForAdd([]);
                   setAddMemberSearchQuery('');
@@ -789,31 +926,8 @@ const App = () => {
           {selectedMembersForRemove.length > 0 && (
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t">
               <button 
-                onClick={() => {
-                  if (window.confirm(`Remove ${selectedMembersForRemove.length} member${selectedMembersForRemove.length > 1 ? 's' : ''} from ${showRemoveMemberModal.name}?`)) {
-                    // Remove from category contacts
-                    setCategories(prev => 
-                      prev.map(cat => 
-                        cat.id === showRemoveMemberModal.id 
-                          ? { ...cat, contacts: cat.contacts.filter(name => 
-                              !selectedMembersForRemove.some(member => member.name === name)
-                            )}
-                          : cat
-                      )
-                    );
-                    // Remove category from chats
-                    setChats(prevChats => 
-                      prevChats.map(chat => 
-                        selectedMembersForRemove.some(member => member.id === chat.id)
-                          ? { ...chat, category: undefined }
-                          : chat
-                      )
-                    );
-                    setShowRemoveMemberModal(null);
-                    setSelectedMembersForRemove([]);
-                  }
-                }}
-                className="w-full bg-red-500 text-white px-4 py-3 rounded-lg font-semibold">
+                onClick={() => handleRemoveMembersFromCategory(showRemoveMemberModal.id, selectedMembersForRemove)}
+                className="w-full bg-red-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-red-600">
                 Remove Selected ({selectedMembersForRemove.length})
               </button>
             </div>
@@ -894,13 +1008,29 @@ const App = () => {
 
       {activeTab === "chats" && activeChat && !showChatInfo && !showGroupInfo && (
         <ChatWindow
-          chat={activeChat}
-          onBack={() => setActiveChat(null)}
+          chat={{
+            ...activeChat,
+            pinnedMessages: chatPinnedMessages[activeChat.id] || [],
+            setPinnedMessages: (pinnedMsgs) => {
+              setChatPinnedMessages(prev => ({
+                ...prev,
+                [activeChat.id]: pinnedMsgs
+              }));
+            }
+          }}
+          onBack={() => {
+            setActiveChat(null);
+            setShowChatInfo(false);
+            setShowGroupInfo(false);
+          }}
           onHeaderClick={() => {
+            console.log('Header clicked for:', activeChat.name, 'isGroup:', activeChat.isGroup);
             if (activeChat.isGroup) {
               setShowGroupInfo(true);
+              setShowChatInfo(false);
             } else {
               setShowChatInfo(true);
+              setShowGroupInfo(false);
             }
           }}
           onAvatarClick={handleAvatarClick}
@@ -908,7 +1038,6 @@ const App = () => {
           onUpdateGlobalStarred={(messageData, action) => {
             if (action === 'add') {
               setGlobalStarredMessages(prev => {
-                // Check if message already exists
                 const exists = prev.some(item => 
                   item.chatName === messageData.chatName && 
                   item.message.id === messageData.message.id
@@ -930,7 +1059,6 @@ const App = () => {
           onUpdateGlobalPinned={(messageData, action) => {
             if (action === 'add') {
               setGlobalPinnedMessages(prev => {
-                // Check if message already exists
                 const exists = prev.some(item => 
                   item.chatName === messageData.chatName && 
                   item.message.id === messageData.message.id
@@ -951,20 +1079,12 @@ const App = () => {
           }}
         />
       )}
-
-      {activeChat && showChatInfo && !activeChat.isGroup && ( 
-        <ChatInfo chat={activeChat} onBack={() => setShowChatInfo(false)} /> 
-      )}
       
       {selectedCategory && (
         <div className="absolute inset-0 bg-white z-20">
-          <CategoryDetail 
+          <CategoryInfo 
             category={selectedCategory}
-            chats={getChatsByCategory(selectedCategory.id)}
             onBack={goBackToCategories}
-            setChats={setChats}
-            setShowContactSelector={setShowContactSelector}
-            handleShowContactSelector={handleShowContactSelector}
           />
         </div>
       )}
@@ -981,10 +1101,84 @@ const App = () => {
                   activeTab === 'calls' ? (() => setShowCallsSearch(true)) : 
                   openGlobalSearch}
                 />
-              <button onClick={activeTab === 'chats' ? toggleChatsMenu : activeTab === 'status' ? handleStatusSettingsClick : () => {}}>
+              <button 
+                className="more-menu"
+                onClick={() => {
+                  console.log('More menu clicked, activeTab:', activeTab); // Add this for debugging
+                  if (activeTab === 'chats') {
+                    setShowChatsMenu(!showChatsMenu);
+                  } else if (activeTab === 'categories') {
+                    setShowCategoriesMenu(!showCategoriesMenu);
+                  } else if (activeTab === 'status') {
+                    setShowStatusMenu(!showStatusMenu);
+                  } else if (activeTab === 'calls') {
+                    setShowCallsMenu(!showCallsMenu);
+                  }
+                }}
+              >
                 <MoreVertical className="w-5 h-5 cursor-pointer" />
               </button>
-              
+
+              {showCategoriesMenu && activeTab === 'categories' && (
+                <div className="absolute right-0 top-12 bg-gray-900 text-white rounded-lg shadow-lg p-2 w-48 z-50">
+                  <button 
+                    className="w-full text-left px-3 py-2 hover:bg-gray-800 rounded"
+                    onClick={() => {
+                      setShowCategoriesMenu(false);
+                      openSettings();
+                    }}
+                  >
+                    Settings
+                  </button>
+                </div>
+              )}
+
+              {showCallsMenu && activeTab === 'calls' && (
+                <div className="more-menu absolute right-0 top-12 bg-gray-900 text-white rounded-lg shadow-lg p-2 w-48 z-50">
+                  <button 
+                    className="w-full text-left px-3 py-2 hover:bg-gray-800 rounded"
+                    onClick={() => {
+                      setShowCallsMenu(false);
+                      setCallLogs([]); // Clear all call logs
+                    }}
+                  >
+                    Clear call logs
+                  </button>
+                  <button 
+                    className="w-full text-left px-3 py-2 hover:bg-gray-800 rounded"
+                    onClick={() => {
+                      setShowCallsMenu(false);
+                      openSettings();
+                    }}
+                  >
+                    Settings
+                  </button>
+                </div>
+              )}
+
+              {showStatusMenu && activeTab === 'status' && (
+                <div className="more-menu absolute right-0 top-12 bg-gray-900 text-white rounded-lg shadow-lg p-2 w-48 z-50">
+                  <button 
+                    className="w-full text-left px-3 py-2 hover:bg-gray-800 rounded"
+                    onClick={() => {
+                      setShowStatusMenu(false);
+                      setShowStatusSettings(true);
+                    }}
+                  >
+                    Status privacy
+                  </button>
+                  <button 
+                    className="w-full text-left px-3 py-2 hover:bg-gray-800 rounded"
+                    onClick={() => {
+                      setShowStatusMenu(false);
+                      openSettings();
+                    }}
+                  >
+                    Settings
+                  </button>
+                </div>
+              )}
+
               {showChatsMenu && activeTab === 'chats' && (
                 <div ref={menuRef}>
                   <ChatsMenu
@@ -1060,7 +1254,7 @@ const App = () => {
         <div className="flex-1 overflow-y-auto" style={{ height: '480px' }}>
           {activeTab === 'chats' && (
             <div className="h-full overflow-y-auto">
-              {allChatsForDisplay.map(chat => {
+              {uncategorizedChats.map(chat => {
                 const chatStatus = statuses.find(s => s.name === chat.name);
                 return (
                   <ChatItem
@@ -1078,20 +1272,13 @@ const App = () => {
             </div>
           )}
 
-          {showGroupInfo && activeChat &&(
-            <GroupInfo 
-              chat={activeChat}
-              onBack={() => setShowGroupInfo(false)}
-            />
-          )}
-
           {activeTab === 'categories' && (
             <div className="h-full overflow-y-auto">
               {categories.map(category => {
                 const categoryChats = getChatsByCategory(category.id);
                 const totalUnread = getTotalUnreadForCategory(category.id);
                 const isExpanded = !!expandedCategories[category.id];
-                if (categoryChats.length === 0 && category.contacts.length === 0) return null;
+                console.log(`Category ${category.name}: ${categoryChats.length} chats, expanded: ${isExpanded}`);
 
                 return (
                   <div key={category.id} className="mb-1">
@@ -1115,7 +1302,7 @@ const App = () => {
                             }}
                             className="p-1 rounded-full hover:bg-gray-200"
                           >
-                            <VolumeX size={16} className="text-gray-600" />
+                            <BellOff size={16} className="text-gray-600" />
                           </button>
                         )}
                         <div className="relative">
@@ -1125,23 +1312,32 @@ const App = () => {
                           >
                             <SettingsIcon size={16} className="text-gray-600" />
                           </button>
-                          
+                                                    
                           {openCategorySettings === category.id && (
                             <div ref={categorySettingsMenuRef} className="absolute top-full right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border">
                               <ul className="py-1">
                                 <li>
-                                  <button onClick={() => addMemberToCategory(category.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                  <button onClick={() => {
+                                    // Use the updated categories state
+                                    const updatedCategory = categories.find(cat => cat.id === category.id);
+                                    setShowAddMemberModal(updatedCategory);
+                                    setOpenCategorySettings(null);
+                                  }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
                                     <UserPlus size={16} className="mr-2 text-green-500"/> Add Members
                                   </button>
                                 </li>
                                 <li>
-                                  <button onClick={() => { setShowRemoveMemberModal(category); setOpenCategorySettings(null); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                  <button onClick={() => { 
+                                    const updatedCategory = categories.find(cat => cat.id === category.id);
+                                    setShowRemoveMemberModal(updatedCategory); 
+                                    setOpenCategorySettings(null); 
+                                  }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
                                     <UserMinus size={16} className="mr-2 text-red-500"/> Remove Members
                                   </button>
                                 </li>
                                 <li>
                                   <button onClick={() => handleToggleCategoryNotifications(category.id)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
-                                    {category.notifications ? <VolumeX size={16} className="mr-2 text-gray-600"/> : <Volume2 size={16} className="mr-2 text-green-500"/>}
+                                    {category.notifications ? <BellOff size={16} className="mr-2 text-gray-600"/> : <Bell size={16} className="mr-2 text-green-500"/>}
                                     {category.notifications ? 'Mute Notifications' : 'Unmute Notifications'}
                                   </button>
                                 </li>
@@ -1159,9 +1355,25 @@ const App = () => {
                     </div>
                     {isExpanded && (
                       <div className="pl-4 ml-4 border-l-2 border-gray-200">
-                        {categoryChats.map(chat => (
-                          <ChatItem key={chat.id} chat={chat} status={statuses.find(s => s.name === chat.name)} onAvatarClick={handleAvatarClick} onChatClick={(chat) => {setActiveChat(chat);setActiveTab('chats');}} onMuteToggle={handleMuteToggle} onArchive={handleArchive} onDelete={handleDelete}/>
-                        ))}
+                        {categoryChats.length === 0 ? (
+                          <div className="p-4 text-gray-500 text-sm">No members in this category</div>
+                        ) : (
+                          categoryChats.map(chat => (
+                            <ChatItem 
+                              key={chat.id} 
+                              chat={chat} 
+                              status={statuses.find(s => s.name === chat.name)} 
+                              onAvatarClick={handleAvatarClick} 
+                              onChatClick={(chat) => {
+                                setActiveChat(chat);
+                                setActiveTab('chats');
+                              }} 
+                              onMuteToggle={handleMuteToggle} 
+                              onArchive={handleArchive} 
+                              onDelete={handleDelete}
+                            />
+                          ))
+                        )}
                       </div>
                     )}
                   </div>
@@ -1198,9 +1410,21 @@ const App = () => {
 
           {activeTab === 'calls' && (
             <div className="h-full overflow-y-auto">
-              {callsData.map(call => (
-                <CallItem key={call.id} call={call} onMakeCall={handleMakeCall}/>
-              ))}
+              {callLogs.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-600">
+                  <div className="text-center">
+                    <div className="flex justify-center mb-4">
+                      <Phone size={40} />   {/* Increase size (e.g., 64px) */}
+                    </div>
+                    <p>No call logs yet</p>
+                    <p className="text-sm">Make a call to see it here</p>
+                  </div>
+                </div>
+              ) : (
+                callLogs.map(call => (
+                  <CallItem key={call.id} call={call} onMakeCall={handleMakeCall}/>
+                ))
+              )}
             </div>
           )}          
         </div>

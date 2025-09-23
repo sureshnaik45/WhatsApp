@@ -1,10 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 
 const StatusViewer = ({ status, onBack, onViewed }) => {
   const [showViewers, setShowViewers] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const menuRef = useRef(null);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowStatusMenu(false);
+      }
+    };    
+    if (showStatusMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStatusMenu]);
+  
   useEffect(() => {
     const timer = setTimeout(() => {
       onBack(); // Auto-close after 5s
@@ -129,14 +145,36 @@ const StatusViewer = ({ status, onBack, onViewed }) => {
             </div>
           </div>
 
-          {/* Right: Three Dots */}
-          <button className="text-white hover:text-gray-400 p-2">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="5" r="2" />
-              <circle cx="12" cy="12" r="2" />
-              <circle cx="12" cy="19" r="2" />
-            </svg>
-          </button>
+          <div className="relative" ref={menuRef}>
+            <button 
+              className="text-white hover:text-gray-400 p-2 rounded-full hover:bg-gray-800"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowStatusMenu(!showStatusMenu);
+              }}
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="19" r="2" />
+              </svg>
+            </button>
+
+            {/* The pop-up menu */}
+            {showStatusMenu && (
+              <div className="absolute top-full right-0 mt-2 w-56 bg-gray-800 text-white rounded-lg shadow-xl z-20">
+                <button
+                  className="w-full text-left px-4 py-3 hover:bg-gray-700 rounded-lg"
+                  onClick={() => {
+                    alert(`You set status notification from ${status.name}.`);
+                    setShowStatusMenu(false); // Close menu after clicking
+                  }}
+                >
+                  Allow status notification
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Progress Bar */}
@@ -153,8 +191,6 @@ const StatusViewer = ({ status, onBack, onViewed }) => {
           </div>
         </div>
       </div>
-
-      {/* Caption & Reply */}
       <div className="bg-black bg-opacity-80 text-white px-4 py-5 space-y-5">
         <p className="text-center text-white text-base">
           Beautiful sunset today!

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Search } from 'lucide-react';
 import { statusData } from '../data/status.js';
 
 const StatusSearch = ({ onBack, onStatusClick }) => {

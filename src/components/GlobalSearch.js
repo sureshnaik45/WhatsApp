@@ -65,7 +65,7 @@ const GlobalSearch = ({ onBack, onChatClick }) => {
         ) : (
           <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
-              <div className="text-4xl mb-2">❌</div>
+              <div className="text-4xl mb-2">X</div>
               <p>No results found for "{searchQuery}"</p>
             </div>
           </div>

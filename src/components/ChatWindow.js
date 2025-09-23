@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Plus, Phone, Video, ArrowLeft, MoreVertical, Pin, Search, X, ChevronDown, 
-         CornerUpLeft, Star, AlertCircle, Copy, Trash2, Forward, Smile } from 'lucide-react';
+import { Plus, Phone, Video, ArrowLeft, MoreVertical, Pin, Search, X,
+         Camera, Image, FileText, User, MapPin, Music, EyeOff, Timer, ChevronDown,
+        StarOff, PinOff, CornerUpLeft, Star, AlertCircle, Copy, Trash2, Forward} from 'lucide-react';         
 import MessageSelection from './MessageSelection.js';
 import { groupMessages } from '../data/chats.js';
 import TimerMessage from './TimerMessage.js';
@@ -19,13 +20,17 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
   // message list (sample)
   const [messages, setMessages] = useState(() => {
     const defaultMessages = [
-      { id: 1, text: 'Hey! How are you?', time: '2:30 PM', fromSelf: false, starred: false, status: 'delivered', avatar: chat.avatar, reactions: {}, readAt: null, deliveredAt: 'Yesterday, 2:30 PM', sender: chat.isGroup ? 'Mom' : null },
+      { id: 1, text: 'Hey! How are you?', time: '2:30 PM', fromSelf: false, starred: false, status: 'delivered', avatar: chat.avatar, reactions: {}, readAt: 'Yesterday, 2:42 PM', deliveredAt: 'Yesterday, 2:30 PM', sender: chat.isGroup ? 'Mom' : null },
       { id: 2, text: "I'm doing great, thanks!", time: '2:32 PM', fromSelf: true, starred: true, status: 'read', reactions: {}, readAt: 'Today, 2:33 PM', deliveredAt: 'Today, 2:32 PM' },
-      { id: 3, text: 'What are your plans for the weekend?', time: '2:35 PM', fromSelf: false, starred: false, status: 'delivered', avatar: chat.avatar, reactions: {}, readAt: null, deliveredAt: 'Yesterday, 2:35 PM', sender: chat.isGroup ? 'Dad' : null },
-      { id: 4, text: 'Thinking of going to the beach', time: '2:40 PM', fromSelf: true, starred: false, status: 'sent', reactions: {}, readAt: null, deliveredAt: 'Today, 2:40 PM' }
+      { id: 3, text: 'What are your plans for the weekend?', time: '2:35 PM', fromSelf: false, starred: false, status: 'delivered', avatar: chat.avatar, reactions: {}, readAt: 'Yesterday, 2:46 PM', deliveredAt: 'Yesterday, 2:35 PM', sender: chat.isGroup ? 'Dad' : null },
+      { id: 4, text: 'Thinking of going to the beach', time: '2:40 PM', fromSelf: true, starred: false, status: 'sent', reactions: {}, readAt: 'Today, 2:49 PM', deliveredAt: 'Today, 2:40 PM' }
     ];
-    
-    // If it's a group chat and has specific group messages, use those instead
+
+    // Helper function to remove duplicates by message ID
+    const getUniqueMessages = (messageArray) => {
+      return Array.from(new Map(messageArray.map(item => [item.id, item])).values());
+    };
+
     if (chat.isGroup && groupMessages[chat.id]) {
       const groupMsgs = groupMessages[chat.id].map(msg => ({
         id: msg.id,
@@ -40,12 +45,13 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
         sender: msg.sender,
         senderAvatar: msg.avatar
       }));
-      return [...groupMsgs, ...defaultMessages];
+      // Combine and then filter for uniqueness
+      return getUniqueMessages([...groupMsgs, ...defaultMessages]);
     }
     
-    // If chat has backup messages, prepend them
     if (chat.backupMessages && chat.backupMessages.length > 0) {
-      return [...chat.backupMessages, ...defaultMessages];
+      // Combine and then filter for uniqueness
+      return getUniqueMessages([...chat.backupMessages, ...defaultMessages]);
     }
     
     return defaultMessages;
@@ -76,15 +82,26 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
   const [forwardingMessages, setForwardingMessages] = useState([]);
   const [messageInfo, setMessageInfo] = useState(null);
   const [showSelectMessages, setShowSelectMessages] = useState(false);
+  const [hoveredMessageId, setHoveredMessageId] = useState(null);
+  const [showMessageMenu, setShowMessageMenu] = useState(null);
   // pinned stack (most recent pinned first)
   const [pinnedStack, setPinnedStack] = useState([]);
-  const [showPinOptions, setShowPinOptions] = useState(null);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if a menu is open and the click was not on a menu or a chevron button
+      if (showMessageMenu && !event.target.closest('.message-menu') && !event.target.closest('.chevron-button')) {
+        setShowMessageMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMessageMenu]); // Rerun this effect only when showMessageMenu changes
 
 
   // UI helpers: context menu and reaction picker
   const [contextMenu, setContextMenu] = useState(null);
-  const [hoveredMessageId, setHoveredMessageId] = useState(null);
-  const [showMessageMenu, setShowMessageMenu] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
 
   // reply flow
@@ -101,32 +118,11 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
 
   const [pinnedIndex, setPinnedIndex] = useState(0);
   const [fullscreenFile, setFullscreenFile] = useState(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(null);
   const [showReactionDetails, setShowReactionDetails] = useState(null);
-  const [emojiPickerPosition, setEmojiPickerPosition] = useState({ messageId: null, position: 'right' });
   const [showTimerMessage, setShowTimerMessage] = useState(false);
   const [showHideFromMessage, setShowHideFromMessage] = useState(false);
   const [timerSettings, setTimerSettings] = useState(null);
   const [hideFromSettings, setHideFromSettings] = useState(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Close message menu when clicking outside
-      if (showMessageMenu && !event.target.closest('.message-menu') && !event.target.closest('.chevron-button')) {
-        setShowMessageMenu(null);
-      }
-      // Close pin options when clicking outside
-      if (showPinOptions && !event.target.closest('.pin-options') && !event.target.closest('.pin-button')) {
-        setShowPinOptions(null);
-      }
-      // Close emoji picker when clicking outside
-      if (showEmojiPicker && !event.target.closest('.emoji-picker') && !event.target.closest('.emoji-button')) {
-        setShowEmojiPicker(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showMessageMenu, showPinOptions, showEmojiPicker]);
 
   useEffect(() => {
     if (pinnedStack.length > 0) {
@@ -208,24 +204,8 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
     }
   }, [replyTo]);
 
-  
-
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowMoreMenu(false);
-      setContextMenu(null);
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-
   const addMessage = (msg) => {
     setMessages(prev => [...prev, msg]);
-  };
-
-  const updateMessageById = (id, patch) => {
-    setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
   };
 
   const removeMessagesByIds = (ids) => {
@@ -334,8 +314,6 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
     );
   }
 
-
-  // toggle star for provided message ids
   const handleToggleStar = (ids) => {
     const starState = getStarState(ids);
     if (starState === 'canStar') {
@@ -469,9 +447,6 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
     if (selectedMessages.length > 0 || showSelectMessages) {
       setSelectedMessages([]);
       setShowSelectMessages(false);
-      // also clear any open per-message menus to avoid stale UI
-      setShowMessageMenu(null);
-      setShowPinOptions(null);
     } else {
       // no selection active — perform the original back action (go to chat list)
       onBack && onBack();
@@ -591,14 +566,6 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
     setIsPreviewFull(false);
   };
 
-  // UI interactions
-  const onMessageContextMenu = (e, msg) => {
-    e.preventDefault();
-    setContextMenu({ x: e.pageX, y: e.pageY, msgId: msg.id });
-    setSelectedMessages([msg.id]);
-    e.stopPropagation();
-  };
-
   const handleTouchStartOnMessage = (msg) => {
     longPressTimer.current = setTimeout(() => {
       setSelectedMessages([msg.id]);
@@ -620,7 +587,7 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
       case 'delivered':
         return (<div className="flex"><svg className="w-4 h-4 text-gray-300" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg><svg className="w-4 h-4 -ml-1 text-gray-300" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg></div>);
       case 'read':
-        return (<div className="flex"><svg className="w-4 h-4 text-blue-400" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg><svg className="w-4 h-4 -ml-1 text-blue-400" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg></div>);
+        return (<div className="flex"><svg className="w-4 h-4 text-blue-700" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg><svg className="w-4 h-4 -ml-1 text-blue-700" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg></div>);
       default:
         return null;
     }
@@ -659,16 +626,12 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
             🎉 Today is {chat.name}'s birthday!
           </p>
         </div>
-      )}
-
-      
+      )}      
 
       {/* Header or MessageSelection */}
       {selectedMessages.length > 0 ? (
         <MessageSelection
           selectedMessages={selectedMessages}
-          messages={messages}
-          pinnedStack={pinnedStack}
           onBack={handleBackFromSelection}
           onStar={(ids) => handleToggleStar(ids)}
           onPin={(ids, duration) => handlePin(ids, duration)}
@@ -703,25 +666,29 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
             </div>
 
             <div className="flex items-center space-x-1">
-              <button 
-                className="p-2 hover:bg-green-700 rounded-full"
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  onMakeCall && onMakeCall(chat, 'audio');
-                }}
-              >
-                <Phone className="w-5 h-5 text-white" />
-              </button>
-              
-              <button 
-                className="p-2 hover:bg-green-700 rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation(); 
-                  onMakeCall && onMakeCall(chat, 'video');
-                }}
-              >
-                <Video className="w-5 h-5 text-white" />
-              </button>
+              {!chat.isGroup && (
+                <>
+                  <button 
+                    className="p-2 hover:bg-green-700 rounded-full"
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      onMakeCall && onMakeCall(chat, 'audio');
+                    }}
+                  >
+                    <Phone className="w-5 h-5 text-white" />
+                  </button>
+                  
+                  <button 
+                    className="p-2 hover:bg-green-700 rounded-full"
+                    onClick={(e) => {
+                      e.stopPropagation(); 
+                      onMakeCall && onMakeCall(chat, 'video');
+                    }}
+                  >
+                    <Video className="w-5 h-5 text-white" />
+                  </button>
+                </>
+              )}                          
               
               <div className="relative">
                 <button 
@@ -793,8 +760,6 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
 
         <div className="space-y-3">
           {messages.map(msg => {
-            const isSelected = selectedMessages.includes(msg.id);
-             const isHovered = hoveredMessageId === msg.id;
             return (
               <div
                 key={msg.id}
@@ -806,217 +771,64 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
                       ? 'justify-end' 
                       : 'justify-start'
                 } relative group`}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                }}
                 onMouseEnter={() => !isMobile && setHoveredMessageId(msg.id)}
                 onMouseLeave={() => !isMobile && setHoveredMessageId(null)}
-                onContextMenu={(e) => {
-                  if (!isMobile) {
-                    e.preventDefault();
-                    return;
-                  }
-                  onMessageContextMenu(e, msg);
-                }}
                 onTouchStart={() => isMobile && handleTouchStartOnMessage(msg)}
                 onTouchEnd={() => isMobile && handleTouchEndOnMessage()}
               >
                 {/* ✅ Checkbox for select-messages mode */}
                 {showSelectMessages && (
-                  <div className={`flex items-center ${msg.fromSelf ? 'ml-2 order-2' : 'mr-2 order-1'}`}>
+                  <div className={`flex items-center ${msg.fromSelf ? 'order-last ml-3' : 'order-first mr-3'}`}>
                     <div
-  className={`w-5 h-5 border-2 border-black rounded-sm flex items-center justify-center cursor-pointer transition-colors duration-200 ${
-    selectedMessages.includes(msg.id)
-      ? 'bg-green-500 border-green-500'
-      : 'bg-white border-black'
-  }`}
-  onClick={() => {
-    setSelectedMessages(prev =>
-      prev.includes(msg.id)
-        ? prev.filter(i => i !== msg.id)
-        : [...prev, msg.id]
-    );
-  }}
->
-  {selectedMessages.includes(msg.id) && (
-    <svg className="w-3 h-3 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-      <polyline points="20,6 9,17 4,12"></polyline>
-    </svg>
-  )}
-</div>
+                      className={`w-4 h-4 border-2 border-gray-400 rounded-sm flex items-center justify-center cursor-pointer transition-colors duration-200 ${
+                        selectedMessages.includes(msg.id)
+                          ? 'bg-green-500 border-green-500'
+                          : 'bg-white border-gray-400'
+                      }`}
+                      onClick={() => {
+                        setSelectedMessages(prev =>
+                          prev.includes(msg.id)
+                            ? prev.filter(i => i !== msg.id)
+                            : [...prev, msg.id]
+                        );
+                      }}
+                    >
+                      {selectedMessages.includes(msg.id) && (
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <polyline points="20,6 9,17 4,12"></polyline>
+                        </svg>
+                      )}
+                    </div>
                   </div>
                 )}
-
+                 {chat.isGroup && !msg.fromSelf && getSenderInfo(msg) && (
+                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xl mr-2 self-start flex-shrink-0">
+                    {getSenderInfo(msg).avatar}
+                  </div>
+                )}
                 <div
-  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg cursor-pointer relative break-words ${msg.fromSelf ? 'bg-green-500 text-white' : 'bg-white text-gray-800'}`}
-  onMouseEnter={() => !isMobile && !showMessageMenu && setHoveredMessageId(msg.id)}
-  onMouseLeave={() => !isMobile && setHoveredMessageId(null)}
-  onClick={() => {
-    if (selectedMessages.length > 0) {
-      setSelectedMessages(prev =>
-        prev.includes(msg.id) ? prev.filter(i => i !== msg.id) : [...prev, msg.id]
-      );
-    }
-  }}
->
-                  {!showSelectMessages && !isMobile && (isHovered || showMessageMenu === msg.id) && (
-    <div className="absolute top-2 right-2 z-10">
-      <div className="relative">
-        <button
-          className="chevron-button p-1 rounded-full bg-gray-300"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowMessageMenu(showMessageMenu === msg.id ? null : msg.id);
-            setHoveredMessageId(null);
-          }}
-        >
-          <ChevronDown size={20} className="text-gray-900" />
-        </button>
-
-                        {showMessageMenu === msg.id && (
-          <div className={`message-menu absolute top-full mt-2 bg-gray-800 text-white rounded-lg shadow-xl py-2 w-48 z-50 ${msg.fromSelf ? 'right-0' : 'left-0'}`}>
-
-                            <button
-              className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm"
-              onClick={() => { handleReplyTo(msg.id); setShowMessageMenu(null); setSelectedMessages([]); }}
-            >
-              <CornerUpLeft className="w-4 h-4" />
-              <span>Reply</span>
-            </button>
-
-                            <button
-                              className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm"
-                              onClick={() => { handleToggleStar([msg.id]); setShowMessageMenu(null); setSelectedMessages([]); }}
-                            >
-                              <Star className="w-4 h-4" fill={msg.starred ? "currentColor" : "none"} />
-                              <span>{msg.starred ? 'Unstar' : 'Star'}</span>
-                            </button>
-
-                            <div className="relative message-menu" onClick={(e) => e.stopPropagation()}>
-                              <button 
-                                className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowPinOptions(showPinOptions === msg.id ? null : msg.id);
-                                }}
-                              >
-                                <Pin className="w-4 h-4" />
-                                <span>Pin</span>
-                              </button>
-
-                              {showPinOptions === msg.id && (
-                                <div className="absolute left-0 mt-2 bg-white text-gray-800 rounded-lg shadow-lg border py-2 w-48 z-50">
-                                  <div className="px-3 py-1 text-xs text-gray-500 font-medium border-b border-gray-100 mb-1">Pin for</div>
-                                  {[
-                                    { label: '24 hours', value: '24h' },
-                                    { label: '1 week', value: '1w' },
-                                    { label: '1 month', value: '1m' },
-                                    { label: 'Unlimited', value: 'unlimited' }
-                                  ].map(option => (
-                                    <button
-                                      key={option.value}
-                                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-                                      onClick={() => {
-                                        handlePin([msg.id], option.value);
-                                        setShowPinOptions(null);
-                                        setShowMessageMenu(null);
-                                        setSelectedMessages([]);
-                                      }}
-                                    >
-                                      {option.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-
-                            <button
-                              className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm"
-                              onClick={() => { setShowEmojiPicker(showEmojiPicker === msg.id ? null : msg.id); setShowMessageMenu(null); }}
-                            >
-                              <Smile className="w-4 h-4" />
-                              <span>React</span>
-                            </button>
-
-                            <button
-                              className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm"
-                              onClick={() => { handleMessageInfo(msg.id); setShowMessageMenu(null); setSelectedMessages([]); }}
-                            >
-                              <AlertCircle className="w-4 h-4" />
-                              <span>Info</span>
-                            </button>
-
-                            <button
-                              className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm"
-                              onClick={() => { handleCopy([msg.id]); setShowMessageMenu(null); setSelectedMessages([]); }}
-                            >
-                              <Copy className="w-4 h-4" />
-                              <span>Copy</span>
-                            </button>
-
-                            <button
-                              className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm"
-                              onClick={() => { handleForward([msg.id]); setShowMessageMenu(null); setSelectedMessages([]); }}
-                            >
-                              <Forward className="w-4 h-4" />
-                              <span>Forward</span>
-                            </button>
-
-                            <button
-                              className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm text-red-400"
-                              onClick={() => { handleDelete([msg.id]); setShowMessageMenu(null); setSelectedMessages([]); }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              <span>Delete</span>
-                            </button>
-                          </div>
-                        )}
-
-                        {showEmojiPicker === msg.id && (
-                          <div 
-                            className={`message-menu emoji-picker absolute top-full mt-2 bg-white rounded-lg shadow-xl border p-3 z-50 ${
-                              msg.fromSelf ? 'right-0' : 'left-0'
-                            }`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="grid grid-cols-4 gap-2 w-48">
-                              {['👍', '❤️', '😂', '😮', '😢', '🙏', '👏', '🔥'].map(emoji => (
-                                <button
-                                  key={emoji}
-                                  className="text-2xl hover:bg-gray-100 p-2 rounded transition-colors"
-                                  onClick={() => {
-                                    setMessages(prev => prev.map(m => {
-                                      if (m.id === msg.id) {
-                                        const updatedReactions = { ...m.reactions };
-                                        if (updatedReactions[emoji]) {
-                                          updatedReactions[emoji] += 1;
-                                        } else {
-                                          updatedReactions[emoji] = 1;
-                                        }
-                                        return { ...m, reactions: updatedReactions };
-                                      }
-                                      return m;
-                                    }));
-                                    setShowEmojiPicker(null);
-                                  }}
-                                >
-                                  {emoji}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                  className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg cursor-pointer relative break-words ${
+                    msg.fromSelf ? 'bg-green-500 text-white rounded-br-sm order-2' : 'bg-white text-gray-800 border rounded-bl-sm order-2'
+                  }`}
+                  onClick={() => {
+                    if (selectedMessages.length > 0) {
+                      setSelectedMessages(prev =>
+                        prev.includes(msg.id) ? prev.filter(i => i !== msg.id) : [...prev, msg.id]
+                      );
+                    }
+                  }}
+                >
+                  {chat.isGroup && !msg.fromSelf && getSenderInfo(msg) && (
+                    <div className="flex items-center mb-2">
+                      
+                      <span className="text-xs font-semibold text-green-700">
+                        {getSenderInfo(msg).name}
+                      </span>
                     </div>
                   )}
-
-                  {chat.isGroup && !msg.fromSelf && getSenderInfo(msg) && (
-  <div className="flex items-center mb-2">
-    <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-sm mr-2">
-      {getSenderInfo(msg).avatar}
-    </div>
-    <span className="text-xs font-semibold text-green-700">
-      {getSenderInfo(msg).name}
-    </span>
-  </div>
-)}
 
                   {/* Reply snippet */}
                   {msg.replyTo && (
@@ -1056,11 +868,75 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
                     {msg.fromSelf && (
                       <div className="flex items-center space-x-1">
                         {renderTicks(msg.status)}
-                        {msg.isScheduled && <span className="text-xs text-blue-400" title="Scheduled message">⏰</span>}
-                        {msg.hiddenFrom && msg.hiddenFrom.length > 0 && <span className="text-xs text-gray-500" title="Hidden from some members">👁️‍🗨️</span>}
+                        {msg.isScheduled && <Timer size={12} className="text-gray-500" title="Scheduled message" />}
+                        {msg.hiddenFrom && msg.hiddenFrom.length > 0 && <EyeOff size={12} className="text-gray-500" title="Hidden from some members" />}
                       </div>
                     )}
                   </div>
+                  {!showSelectMessages && !isMobile && (hoveredMessageId === msg.id || showMessageMenu === msg.id) && (
+                    <div className="absolute top-1 right-1 z-20">
+                      <div className="relative">
+                        {/* Button to toggle the menu */}
+                        <button
+                          className="chevron-button p-1 rounded-full bg-gray-200 hover:bg-gray-300"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowMessageMenu(showMessageMenu === msg.id ? null : msg.id);
+                          }}
+                        >
+                          <ChevronDown size={18} className="text-gray-800" />
+                        </button>
+
+                        {/* Conditionally render the menu itself */}
+                        {showMessageMenu === msg.id && (
+                          <div 
+                            className={`message-menu absolute bg-gray-800 text-white rounded-lg shadow-xl py-2 w-48 z-50 top-full mt-2 ${
+                              msg.fromSelf ? 'right-0' : 'left-0'
+                            }`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm" onClick={() => { handleReplyTo(msg.id); setShowMessageMenu(null); }}>
+                              <CornerUpLeft size={16} /><span>Reply</span>
+                            </button>
+                            
+                            {/* UPDATED Star/Unstar button */}
+                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm" onClick={() => { handleToggleStar([msg.id]); setShowMessageMenu(null); }}>
+                              {msg.starred ? (
+                                <StarOff size={16} />
+                              ) : (
+                                <Star size={16} />
+                              )}
+                              <span>{msg.starred ? 'Unstar' : 'Star'}</span>
+                            </button>
+
+                            {/* UPDATED Pin/Unpin button */}
+                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm" onClick={() => { handlePin([msg.id], 'unlimited'); setShowMessageMenu(null); }}>
+                              {pinnedStack.some(p => p.id === msg.id) ? (
+                                <PinOff size={16} />
+                              ) : (
+                                <Pin size={16} />
+                              )}
+                              <span>{pinnedStack.some(p => p.id === msg.id) ? 'Unpin' : 'Pin'}</span>
+                            </button>
+
+                            {/* ... other buttons ... */}
+                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm" onClick={() => { handleMessageInfo(msg.id); setShowMessageMenu(null); }}>
+                              <AlertCircle size={16} /><span>Message info</span>
+                            </button>
+                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm" onClick={() => { handleCopy([msg.id]); setShowMessageMenu(null); }}>
+                              <Copy size={16} /><span>Copy</span>
+                            </button>
+                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center space-x-3 text-sm" onClick={() => { handleForward([msg.id]); setShowMessageMenu(null); }}>
+                              <Forward size={16} /><span>Forward</span>
+                            </button>
+                            <button className="w-full text-left px-4 py-2 text-red-400 hover:bg-gray-700 flex items-center space-x-3 text-sm" onClick={() => { handleDelete([msg.id]); setShowMessageMenu(null); }}>
+                              <Trash2 size={16} /><span>Delete</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {Object.keys(msg.reactions).length > 0 && (
@@ -1131,19 +1007,23 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
 
       {/* Attachments menu */}
       {showAttachments && (
-        <div className="absolute bottom-20 left-4 bg-gray-900 text-white rounded-lg shadow-lg p-2 w-52 space-y-1 z-40">
+        <div className="attachments-menu absolute bottom-20 left-4 bg-gray-900 text-white rounded-lg shadow-lg p-2 w-52 space-y-1 z-40">
           {[
-            { icon: '📷', label: 'Camera' },
-            { icon: '🖼️', label: 'Gallery' },
-            { icon: '📄', label: 'Document' },
-            { icon: '👤', label: 'Contact' },
-            { icon: '📍', label: 'Location' },
-            { icon: '🎵', label: 'Audio' },
-            { icon: '⏰', label: 'Timer' },
-            ...(chat.isGroup ? [{ icon: '👁️‍🗨️', label: 'Hide From' }] : [])
+            { icon: Camera, label: 'Camera' },
+            { icon: Image, label: 'Gallery' },
+            { icon: FileText, label: 'Document' },
+            { icon: User, label: 'Contact' },
+            { icon: MapPin, label: 'Location' },
+            { icon: Music, label: 'Audio' },
+            { icon: Timer, label: 'Timer' },
+            ...(chat.isGroup ? [{ icon: EyeOff, label: 'Hide From' }] : [])
           ].map((opt, idx) => (
-            <button key={idx} className="flex items-center w-full px-3 py-2 hover:bg-gray-800 rounded" onClick={() => handleAttachmentClick(opt.label)}>
-              <span className="text-xl mr-3">{opt.icon}</span>
+            <button 
+              key={idx} 
+              className="flex items-center w-full px-3 py-2 hover:bg-gray-800 rounded" 
+              onClick={() => handleAttachmentClick(opt.label)}
+            >
+              <opt.icon size={20} className="mr-3" />
               <span className="text-sm">{opt.label}</span>
             </button>
           ))}
@@ -1282,68 +1162,70 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
               </div>
               
               {chat.isGroup ? (
-                // For groups, show "Seen by" count and search
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-700">Seen by 3</span>
-                    <button className="text-gray-500">
-                      <Search size={16} />
-                    </button>
-                  </div>
-                  {/* Mock group members who saw the message */}
-                  {[
-                    { name: 'Mom', avatar: '👩‍💼', time: 'Today, 2:33 PM' },
-                    { name: 'Dad', avatar: '👨‍🦳', time: 'Today, 2:35 PM' },
-                    { name: 'Sister', avatar: '👩‍🎓', time: 'Today, 2:40 PM' }
-                  ].map((member, index) => (
-                    <div key={index} className="flex items-center py-2">
-                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-sm mr-3">
-                        {member.avatar}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{member.name}</div>
-                        <div className="text-xs text-gray-500">Seen at {member.time}</div>
-                      </div>
+                  messageInfo.fromSelf ? (
+                  // If you SENT the message, show the "Seen by" list
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-700">Seen by 3</span>
+                      <button className="text-gray-500"><Search size={16} /></button>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                // For individual chats, show delivery status
-                messageInfo.fromSelf && (
-                  <>
-                    {messageInfo.readAt && (
-                      <div className="flex items-center space-x-2">
-                        <div className="flex">
-                          <svg className="w-4 h-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/>
-                          </svg>
-                          <svg className="w-4 h-4 -ml-1 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/>
-                          </svg>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Read {messageInfo.readAt}
+                    {[
+                      { name: 'Mom', avatar: '👩‍💼', time: 'Today, 2:33 PM', seenTime:'Today, 2:40 PM' },
+                      { name: 'Dad', avatar: '👨‍🦳', time: 'Today, 2:35 PM', seenTime:'Today, 2:48 PM' },
+                      { name: 'Sister', avatar: '👩‍🎓', time: 'Today, 2:40 PM', seenTime:'Today, 2:52 PM' }
+                    ].map((member, index) => (
+                      <div key={index} className="flex items-center py-2">
+                        <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-sm mr-3">{member.avatar}</div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{member.name}</div>
+                          <div className="text-xs text-gray-500">Delivered at {member.time}</div>
+                          <div className="text-xs text-gray-500">Seen at {member.seenTime}</div>
                         </div>
                       </div>
-                    )}
-                    
+                    ))}
+                  </div>
+                ) : (
+                  // If you RECEIVED the message, show its delivery status
+                  <>
                     {messageInfo.deliveredAt && (
                       <div className="flex items-center space-x-2">
-                        <div className="flex">
-                          <svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/>
-                          </svg>
-                          <svg className="w-4 h-4 -ml-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/>
-                          </svg>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Delivered {messageInfo.deliveredAt}
-                        </div>
+                        <div className="flex"><svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg><svg className="w-4 h-4 -ml-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg></div>
+                        <div className="text-sm text-gray-600">Delivered {messageInfo.deliveredAt}</div>
                       </div>
                     )}
+                    {messageInfo.readAt && (
+                      <div className="flex items-center space-x-2">
+                        <div className="flex"><svg className="w-4 h-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg><svg className="w-4 h-4 -ml-1 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg></div>
+                        <div className="text-sm text-gray-600">Read {messageInfo.readAt}</div>
+                      </div>
+                    )}      
                   </>
                 )
+              ) : (
+                <>
+                  {messageInfo.deliveredAt && (
+                    <div className="flex items-center space-x-2">
+                      <div className="flex">
+                        <svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg>
+                        <svg className="w-4 h-4 -ml-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Delivered {messageInfo.deliveredAt}
+                      </div>
+                    </div>
+                  )}
+                  {messageInfo.readAt && (
+                    <div className="flex items-center space-x-2">
+                      <div className="flex">
+                        <svg className="w-4 h-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg>
+                        <svg className="w-4 h-4 -ml-1 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293z"/></svg>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Read {messageInfo.readAt}
+                      </div>
+                    </div>
+                  )}      
+                </>
               )}
             </div>
           </div>
@@ -1433,7 +1315,6 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
           </div>
         </div>
       )}
-
 
       {showStarredMessages && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">

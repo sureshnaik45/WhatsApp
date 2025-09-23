@@ -5,10 +5,8 @@ import ImageStatusEditor from './ImageStatusEditor'; // if you have one
 
 const StatusSelector = () => {
   const [selectedOption, setSelectedOption] = useState(null);
-
   return (
     <div className="p-6">
-      {/* Show buttons only if no option is selected */}
       {!selectedOption && (
         <div className="flex space-x-4">
           <button
@@ -32,8 +30,6 @@ const StatusSelector = () => {
           </button>
         </div>
       )}
-
-      {/* Show editor based on selected option */}
       {selectedOption === 'text' && (
         <TextStatusEditor onBack={() => setSelectedOption(null)} />
       )}

@@ -27,7 +27,6 @@ const ChatInfo = ({ chat, onBack }) => {
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Header */}
       <div className="bg-green-600 text-white px-4 py-3">
                 
         <div className="flex items-center space-x-3">           
@@ -40,9 +39,7 @@ const ChatInfo = ({ chat, onBack }) => {
             </svg>
           </button>          
           <h1 className="text-lg font-medium">Contact Info</h1>         
-        </div>       
-      
-        
+        </div>                     
       </div>
 
       {/* Contact Profile */}
@@ -57,9 +54,6 @@ const ChatInfo = ({ chat, onBack }) => {
         <p className="text-gray-600 mt-1">{getPhoneNumber()}</p>
       </div>
 
-      
-
-      {/* Contact Details */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-4">
           <div className="mb-6">

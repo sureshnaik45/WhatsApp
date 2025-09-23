@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Image, Download } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import ChatBackup from './ChatBackup.js';
 
 const ChatSettings = ({ onBack, onIndividualBackup }) => {
