@@ -440,9 +440,8 @@ const App = () => {
 
 
   return (
-    <div className={`max-w-md mx-auto mt-2 shadow-2xl rounded-lg overflow-hidden relative bg-white`} 
-      style={{ height: '600px' }}
-    >      
+    <div className="max-w-md mx-auto h-screen overflow-hidden relative bg-white flex flex-col">
+         
       <NewGroupModal 
         isOpen={showNewGroupModal}
         onClose={() => setShowNewGroupModal(false)}
