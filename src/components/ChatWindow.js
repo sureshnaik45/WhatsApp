@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Phone, Video, ArrowLeft, MoreVertical, Pin, Search, X,
          Camera, Image, FileText, User, MapPin, Music, EyeOff, Timer, ChevronDown,
-        StarOff, PinOff, CornerUpLeft, Star, AlertCircle, Copy, Trash2, Forward} from 'lucide-react';         
+        StarOff, PinOff, CornerUpLeft, Star, AlertCircle, Copy, Trash2, Forward} from 'lucide-react';
+import ChatPrivacy from './ChatPrivacy.js';
 import MessageSelection from './MessageSelection.js';
 import { groupMessages } from '../data/chats.js';
 import TimerMessage from './TimerMessage.js';
@@ -86,6 +87,8 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
   const [showMessageMenu, setShowMessageMenu] = useState(null);
   // pinned stack (most recent pinned first)
   const [pinnedStack, setPinnedStack] = useState([]);
+  const [showChatPrivacy, setShowChatPrivacy] = useState(false);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       // Check if a menu is open and the click was not on a menu or a chevron button
@@ -122,7 +125,7 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
   const [showTimerMessage, setShowTimerMessage] = useState(false);
   const [showHideFromMessage, setShowHideFromMessage] = useState(false);
   const [timerSettings, setTimerSettings] = useState(null);
-  const [hideFromSettings, setHideFromSettings] = useState(null);
+  const [hideFromSettings, setHideFromSettings] = useState(null);  
 
   useEffect(() => {
     if (pinnedStack.length > 0) {
@@ -310,6 +313,14 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
           inputRef.current?.focus();
         }}
         groupMembers={dynamicGroupMembers}
+      />
+    );
+  }
+
+  if (showChatPrivacy) {
+    return (
+      <ChatPrivacy 
+        onBack={() => setShowChatPrivacy(false)}
       />
     );
   }
@@ -711,6 +722,15 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
                       }}
                     >
                       Starred messages
+                    </button>
+                    <button 
+                      className="w-full text-left px-3 py-2 hover:bg-gray-800 rounded"
+                      onClick={() => {
+                        setShowChatPrivacy(true);
+                        setShowMoreMenu(false);
+                      }}
+                    >
+                      Chat privacy
                     </button>
                     {/* Only show on desktop/laptop */}
                     {!isMobile && (

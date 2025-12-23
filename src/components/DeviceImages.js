@@ -1,25 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 
-const DeviceImages = ({ onBack, onStatusSent }) => {
+const DeviceImages = ({ onBack, onStatusSent, selectedImage: initialImage }) => {
   const fileInputRef = useRef(null);
   const hasOpened = useRef(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(initialImage || null);
   const [caption, setCaption] = useState('');
 
   useEffect(() => {
-    if (fileInputRef.current && !hasOpened.current) {
+    if (!initialImage && fileInputRef.current && !hasOpened.current) {
       fileInputRef.current.click();
       hasOpened.current = true;
     }
-  }, []);
+  }, [initialImage]);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedImage(file);
     } else {
-      onBack(); // gracefully exit if user cancels
+      if (!initialImage) {
+        onBack(); 
+      }
     }
   };
 
@@ -32,7 +34,6 @@ const DeviceImages = ({ onBack, onStatusSent }) => {
       };
       
       if (onStatusSent) onStatusSent(statusData);
-      onBack();
     }
   };
 

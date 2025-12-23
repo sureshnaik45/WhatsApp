@@ -721,15 +721,19 @@ const App = () => {
               }
             }}
             onViewerClick={(viewer) => {
-              setActiveChat(viewer);
+              const targetChat = chats.find(c => c.name === viewer.name) || viewer;
+              setActiveChat(targetChat);
               setShowMyStatusViewer(false);
+              setActiveTab('chats');
+              setShowStatusViews(false);
+              setShowMyStatusManager(false);
             }}
           />
         </div>
       )}
-
+      
       {showAddMemberModal && (
-        <div className="absolute inset-0 bg-white z-50" style={{ height: '600px' }}>
+        <div className="absolute inset-0 bg-white z-50 flex flex-col">
           <div className="bg-green-600 text-white px-4 py-3">
             <div className="flex items-center space-x-3">
               <button onClick={() => {
@@ -759,7 +763,7 @@ const App = () => {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto" style={{ height: 'calc(600px - 180px)' }}>
+          <div className="flex-1 overflow-y-auto">
             {chats.filter(chat => {
               // Only show individual contacts (not groups)
               if (chat.isGroup) return false;
@@ -867,7 +871,7 @@ const App = () => {
       )}
 
       {showRemoveMemberModal && (
-        <div className="absolute inset-0 bg-white z-50" style={{ height: '600px' }}>
+        <div className="absolute inset-0 bg-white z-50 flex flex-col">
           <div className="bg-green-600 text-white px-4 py-3">
             <div className="flex items-center space-x-3">
               <button onClick={() => {
@@ -883,7 +887,7 @@ const App = () => {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto" style={{ height: 'calc(600px - 180px)' }}>
+          <div className="flex-1 overflow-y-auto">
             {getChatsByCategory(showRemoveMemberModal.id).map(chat => {
               const isSelected = selectedMembersForRemove.find(c => c.id === chat.id);
               return (
@@ -1250,7 +1254,7 @@ const App = () => {
       )}
 
       {!showOverlay && (
-        <div className="flex-1 overflow-y-auto" style={{ height: '480px' }}>
+        <div className="flex-1 overflow-y-auto">
           {activeTab === 'chats' && (
             <div className="h-full overflow-y-auto">
               {uncategorizedChats.map(chat => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const ProfilePicture = ({ chat, onBack }) => {
+const ProfilePicture = ({ chat, onBack, hideFooter = false }) => {
   const [showMenu, setShowMenu] = useState(false);
 
   const handleBackgroundClick = () => {
@@ -43,10 +43,14 @@ const ProfilePicture = ({ chat, onBack }) => {
           </div>         
         </div>
       </div>
-      <div className="text-white text-center p-6 bg-black bg-opacity-80">
-        <p className="text-lg font-medium opacity-90">Profile Photo</p>
-        <p className="text-sm opacity-60 mt-1">Updated September 12, 9:15 PM</p>
-      </div>
+      
+      {/* Conditionally render the footer text based on the prop */}
+      {!hideFooter && (
+        <div className="text-white text-center p-6 bg-black bg-opacity-80">
+          <p className="text-lg font-medium opacity-90">Profile Photo</p>
+          <p className="text-sm opacity-60 mt-1">Updated September 12, 9:15 PM</p>
+        </div>
+      )}
     </div>
   );
 };

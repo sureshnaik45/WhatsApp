@@ -93,7 +93,6 @@ const TextStatusEditor = ({ onBack, onStatusSent }) => {
         timestamp: new Date()
       };
       if (onStatusSent) onStatusSent(statusData);
-      onBack();
     }
   };
 

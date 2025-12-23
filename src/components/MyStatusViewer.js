@@ -263,8 +263,8 @@ const MyStatusViewer = ({ myStatuses, onBack, onDeleteStatus, onViewerClick }) =
             <div className="text-center text-white">
               <div className="text-9xl mb-4">📄</div>
               <button 
-                onClick={() => alert('Opening document...')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+                onClick={(e) => {e.stopPropagation(); window.open(status.media, '_blank')}}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg relative z-50"
               >
                 Open Doc
               </button>

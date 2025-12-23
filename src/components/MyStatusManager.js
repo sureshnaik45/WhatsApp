@@ -131,14 +131,10 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
         type: 'document',
         name: selectedDoc.name,
         size: selectedDoc.size,
+        media: URL.createObjectURL(selectedDoc),
         caption: caption.trim()
       };
-      
-      if (onStatusSent) onStatusSent(statusData);
-      setCaption('');
-      setSelectedDoc(null);
-      setSelectedOption(null);
-      if (onBack) onBack();
+      handleStatusSentAndClose(statusData);
     }
   };
 
@@ -149,12 +145,7 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
         media: URL.createObjectURL(selectedAudio),
         caption: caption.trim()
       };
-      
-      if (onStatusSent) onStatusSent(statusData);
-      setCaption('');
-      setSelectedAudio(null);
-      setSelectedOption(null);
-      if (onBack) onBack();
+      handleStatusSentAndClose(statusData);
     }
   };
 
@@ -165,12 +156,7 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
           media: URL.createObjectURL(selectedVideo),
           caption: caption.trim()
         };
-        
-        if (onStatusSent) onStatusSent(statusData);
-        setCaption('');
-        setSelectedVideo(null); // clear video (fix: clear video instead of doc)
-        setSelectedOption(null);
-        if (onBack) onBack();
+        handleStatusSentAndClose(statusData);
       }
   };
 
@@ -182,6 +168,11 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
     setSelectedDoc(null);
     setSelectedImage(null);
     setSelectedOption(null);
+  };
+
+  const handleStatusSentAndClose = (statusData) => {
+    if (onStatusSent) onStatusSent(statusData);
+    if (onBack) onBack();
   };
 
   const handleShare = () => {
@@ -481,14 +472,14 @@ const MyStatusManager = ({ onBack, onStatusSent, hasStatus = false, setUserHasSt
 
   if (selectedOption === 'images') {
     if (selectedImage) {
-      return <DeviceImages selectedImage={selectedImage} onBack={handleBack} onStatusSent={onStatusSent} />;
+      return <DeviceImages selectedImage={selectedImage} onBack={handleBack} onStatusSent={handleStatusSentAndClose} />;
     }  
     return null;
   }
 
   if (selectedOption === "text") {
     return (
-      <TextStatusEditor onBack={() => setSelectedOption(null)} onStatusSent={onStatusSent}/>
+      <TextStatusEditor onBack={() => setSelectedOption(null)} onStatusSent={handleStatusSentAndClose}/>
     )
   }
 
