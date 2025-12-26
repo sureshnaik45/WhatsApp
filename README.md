@@ -1,1 +1,1 @@
-With so much research and curiosity creat(ed)ing advanced version of WhatsApp. Everything from research, design, implementation.
+A next-generation messaging application built with React.js and Tailwind CSS. This project goes beyond the standard WhatsApp experience by implementing highly anticipated features, advanced privacy controls, and productivity tools that are currently missing from the official application.
