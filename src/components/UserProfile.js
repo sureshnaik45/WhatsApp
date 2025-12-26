@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Edit3, Search, X, MoreVertical } from 'lucide-react'; // Added MoreVertical
+import { ArrowLeft, Edit3, Search, X, MoreVertical } from 'lucide-react';
+import ProfileDownloadPrivacy from './ProfileDownloadPrivacy.js';
 
 const UserProfile = ({ onBack, onViewerClick, userPhoto, setUserPhoto }) => {
   const [currentView, setCurrentView] = useState('main'); // 'main', 'photo', 'viewers'
@@ -11,7 +12,6 @@ const UserProfile = ({ onBack, onViewerClick, userPhoto, setUserPhoto }) => {
   // New States for Menu and Privacy
   const [showMenu, setShowMenu] = useState(false);
   const [showPrivacySettings, setShowPrivacySettings] = useState(false);
-  const [privacySetting, setPrivacySetting] = useState('everyone');
   
   const [showViewers, setShowViewers] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,64 +83,7 @@ const UserProfile = ({ onBack, onViewerClick, userPhoto, setUserPhoto }) => {
   // 1. New Profile Privacy Screen
   if (showPrivacySettings) {
     return (
-      <div className="h-full flex flex-col bg-white">
-        <div className="bg-green-600 text-white px-4 py-3">
-          <div className="flex items-center space-x-3">
-            <button onClick={() => setShowPrivacySettings(false)} className="text-white">
-              <ArrowLeft size={24} />
-            </button>
-            <h1 className="text-lg font-medium">Profile Download Privacy</h1>
-          </div>
-        </div>
-        <div className="flex-1 p-4">
-          <div className="mb-3">
-            <h3 className="text-lg font-semibold mb-1">Allow Profile Download</h3>
-            <div className="space-y-1">
-              <label className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
-                <input
-                  type="radio"
-                  name="privacy"
-                  value="everyone"
-                  checked={privacySetting === 'everyone'}
-                  onChange={(e) => setPrivacySetting(e.target.value)}
-                  className="w-4 h-4 text-green-600"
-                />
-                <div>
-                  <span className="font-medium">Everyone</span>
-                </div>
-              </label>
-
-              <label className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
-                <input
-                  type="radio"
-                  name="privacy"
-                  value="contacts"
-                  checked={privacySetting === 'contacts'}
-                  onChange={(e) => setPrivacySetting(e.target.value)}
-                  className="w-4 h-4 text-green-600"
-                />
-                <div>
-                  <span className="font-medium">My Contacts</span>
-                </div>
-              </label>
-
-              <label className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
-                <input
-                  type="radio"
-                  name="privacy"
-                  value="except"
-                  checked={privacySetting === 'except'}
-                  onChange={(e) => setPrivacySetting(e.target.value)}
-                  className="w-4 h-4 text-green-600"
-                />
-                <div>
-                  <span className="font-medium">My Contacts Except...</span>
-                </div>
-              </label>
-            </div>
-          </div>        
-        </div>
-      </div>
+      <ProfileDownloadPrivacy onBack={() => setShowPrivacySettings(false)} />
     );
   }
 

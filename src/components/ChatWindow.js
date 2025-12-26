@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Phone, Video, ArrowLeft, MoreVertical, Pin, Search, X,
          Camera, Image, FileText, User, MapPin, Music, EyeOff, Timer, ChevronDown,
-        StarOff, PinOff, CornerUpLeft, Star, AlertCircle, Copy, Trash2, Forward} from 'lucide-react';
+        StarOff, PinOff, CornerUpLeft, Star, AlertCircle, Copy, Trash2, Forward, Filter } from 'lucide-react'; // Added Filter icon
 import ChatPrivacy from './ChatPrivacy.js';
 import MessageSelection from './MessageSelection.js';
 import { groupMessages } from '../data/chats.js';
 import TimerMessage from './TimerMessage.js';
 import HideFromMessage from './HideFromMessage.js';
+import DateRangePicker from './DateRangePicker.js';
 
 const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, onUpdateGlobalStarred, onUpdateGlobalPinned }) => {
   // Sample contacts for forwarding
@@ -18,13 +19,25 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
     { id: 5, name: 'Eva Brown', avatar: '👩‍🎨' }
   ]);
 
+  // State for Date Range Picker
+  const [showDateRangePicker, setShowDateRangePicker] = useState(false);
+  const [dateFilter, setDateFilter] = useState(null); // { start, end, order }
+
   // message list (sample)
   const [messages, setMessages] = useState(() => {
+    // Helper to get a timestamp for X days ago
+    const daysAgo = (days) => {
+      const date = new Date();
+      date.setDate(date.getDate() - days);
+      return date.getTime();
+    };
+
     const defaultMessages = [
-      { id: 1, text: 'Hey! How are you?', time: '2:30 PM', fromSelf: false, starred: false, status: 'delivered', avatar: chat.avatar, reactions: {}, readAt: 'Yesterday, 2:42 PM', deliveredAt: 'Yesterday, 2:30 PM', sender: chat.isGroup ? 'Mom' : null },
-      { id: 2, text: "I'm doing great, thanks!", time: '2:32 PM', fromSelf: true, starred: true, status: 'read', reactions: {}, readAt: 'Today, 2:33 PM', deliveredAt: 'Today, 2:32 PM' },
-      { id: 3, text: 'What are your plans for the weekend?', time: '2:35 PM', fromSelf: false, starred: false, status: 'delivered', avatar: chat.avatar, reactions: {}, readAt: 'Yesterday, 2:46 PM', deliveredAt: 'Yesterday, 2:35 PM', sender: chat.isGroup ? 'Dad' : null },
-      { id: 4, text: 'Thinking of going to the beach', time: '2:40 PM', fromSelf: true, starred: false, status: 'sent', reactions: {}, readAt: 'Today, 2:49 PM', deliveredAt: 'Today, 2:40 PM' }
+      // Added timestamps to mock data for filtering
+      { id: 1, text: 'Hey! How are you?', time: '2:30 PM', fromSelf: false, starred: false, status: 'delivered', avatar: chat.avatar, reactions: {}, readAt: 'Yesterday, 2:42 PM', deliveredAt: 'Yesterday, 2:30 PM', sender: chat.isGroup ? 'Mom' : null, timestamp: daysAgo(1) },
+      { id: 2, text: "I'm doing great, thanks!", time: '2:32 PM', fromSelf: true, starred: true, status: 'read', reactions: {}, readAt: 'Today, 2:33 PM', deliveredAt: 'Today, 2:32 PM', timestamp: daysAgo(0) },
+      { id: 3, text: 'What are your plans for the weekend?', time: '2:35 PM', fromSelf: false, starred: false, status: 'delivered', avatar: chat.avatar, reactions: {}, readAt: 'Yesterday, 2:46 PM', deliveredAt: 'Yesterday, 2:35 PM', sender: chat.isGroup ? 'Dad' : null, timestamp: daysAgo(1) },
+      { id: 4, text: 'Thinking of going to the beach', time: '2:40 PM', fromSelf: true, starred: false, status: 'sent', reactions: {}, readAt: 'Today, 2:49 PM', deliveredAt: 'Today, 2:40 PM', timestamp: daysAgo(0) }
     ];
 
     // Helper function to remove duplicates by message ID
@@ -44,7 +57,8 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
         readAt: null,
         deliveredAt: msg.time,
         sender: msg.sender,
-        senderAvatar: msg.avatar
+        senderAvatar: msg.avatar,
+        timestamp: Date.now() // Defaulting group mock msgs to now for safety
       }));
       // Combine and then filter for uniqueness
       return getUniqueMessages([...groupMsgs, ...defaultMessages]);
@@ -57,6 +71,33 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
     
     return defaultMessages;
   });
+
+  // Calculate filtered and sorted messages
+  const displayMessages = React.useMemo(() => {
+    let result = [...messages];
+
+    // 1. Filter by Date Range
+    if (dateFilter) {
+      const startMs = new Date(dateFilter.start).setHours(0, 0, 0, 0);
+      const endMs = new Date(dateFilter.end).setHours(23, 59, 59, 999);
+
+      result = result.filter(msg => {
+        // Use msg.timestamp if available, otherwise fallback to id (if id is timestamp-like) or skip
+        const msgTime = msg.timestamp || (msg.id > 1000000 ? msg.id : Date.now()); 
+        return msgTime >= startMs && msgTime <= endMs;
+      });
+    }
+
+    // 2. Sort
+    if (dateFilter && dateFilter.order === 'desc') {
+      result.sort((a, b) => (b.timestamp || b.id) - (a.timestamp || a.id));
+    } else {
+      // Default asc sort (usually messages are already in order, but good to ensure)
+      result.sort((a, b) => (a.timestamp || a.id) - (b.timestamp || b.id));
+    }
+
+    return result;
+  }, [messages, dateFilter]);
 
   // lastSeen is computed once so input typing / re-render doesn't randomize it
   const [lastSeen] = useState(() => {
@@ -198,7 +239,7 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
   // scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [messages, pinnedStack]);
+  }, [messages, pinnedStack, dateFilter]); // Added dateFilter dependency
 
   // auto-focus input when replyTo is set
   useEffect(() => {
@@ -208,7 +249,9 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
   }, [replyTo]);
 
   const addMessage = (msg) => {
-    setMessages(prev => [...prev, msg]);
+    // Ensure new messages have a timestamp
+    const msgWithTimestamp = { ...msg, timestamp: Date.now() };
+    setMessages(prev => [...prev, msgWithTimestamp]);
   };
 
   const removeMessagesByIds = (ids) => {
@@ -631,6 +674,17 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
       <input ref={fileDocRef} type="file" accept="*/*" onChange={handleFileSelect} className="hidden" />
       <input ref={fileAudioRef} type="file" accept="audio/*" onChange={handleFileSelect} className="hidden" />
 
+      {/* Date Range Picker Modal */}
+      {showDateRangePicker && (
+        <DateRangePicker 
+          onClose={() => setShowDateRangePicker(false)}
+          onApply={(filterData) => {
+            setDateFilter(filterData);
+            setShowDateRangePicker(false);
+          }}
+        />
+      )}
+
       {isBirthday && (
         <div className="text-center text-gray-600 mb-3 text-sm">
           <p className="inline-block bg-yellow-200 px-3 py-2 rounded-full text-xs">
@@ -732,6 +786,15 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
                     >
                       Chat privacy
                     </button>
+                    <button 
+                      className="w-full text-left px-3 py-2 hover:bg-gray-800 rounded"
+                      onClick={() => {
+                        setShowDateRangePicker(true);
+                        setShowMoreMenu(false);
+                      }}
+                    >
+                      Messages range
+                    </button>                                        
                     {/* Only show on desktop/laptop */}
                     {!isMobile && (
                       <button 
@@ -749,6 +812,25 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Date Filter Banner */}
+      {dateFilter && (
+        <div className="bg-green-50 px-4 py-2 border-b border-green-100 flex items-center justify-between text-sm">
+          <div className="flex items-center text-green-800">
+            <Filter size={14} className="mr-2" />
+            <span>
+              {new Date(dateFilter.start).toLocaleDateString()} - {new Date(dateFilter.end).toLocaleDateString()} 
+              ({dateFilter.order === 'asc' ? 'Oldest' : 'Newest'})
+            </span>
+          </div>
+          <button 
+            onClick={() => setDateFilter(null)}
+            className="text-green-600 font-medium hover:text-green-800"
+          >
+            Clear
+          </button>
         </div>
       )}
 
@@ -779,7 +861,14 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
         </div>
 
         <div className="space-y-3">
-          {messages.map(msg => {
+          {displayMessages.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">🔍</div>
+              <p>No messages found in this range</p>
+              <button onClick={() => setDateFilter(null)} className="text-green-600 text-sm mt-2 font-medium">Clear Filter</button>
+            </div>
+          ) : (
+            displayMessages.map(msg => {
             return (
               <div
                 key={msg.id}
@@ -983,7 +1072,8 @@ const ChatWindow = ({ chat, onBack, onHeaderClick, onAvatarClick, onMakeCall, on
                 )}
               </div>
             );
-          })}
+          })
+        )}
           <div ref={messagesEndRef} />
         </div>
       </div>

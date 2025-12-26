@@ -6,7 +6,7 @@ const ChatsMenu = ({ onClose, onNewGroup, onNewCategory, onStarred, onPinned, on
     { icon: Users, label: 'New Group', action: onNewGroup },
     { icon: Users, label: 'New Category', action: onNewCategory },
     { icon: Star, label: 'Starred Messages', action: onStarred },
-    { icon: Pin, label: 'Pinned Chats', action: onPinned },
+    { icon: Pin, label: 'Pinned Messages', action: onPinned },
     { icon: SettingsIcon, label: 'Settings', action: onSettings }
   ];
 

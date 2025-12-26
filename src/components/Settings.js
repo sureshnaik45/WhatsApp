@@ -1,7 +1,7 @@
 import React from 'react';
 import { User, Bell, Lock, Palette, HelpCircle, Info, CalendarHeart } from 'lucide-react';
 
-const Settings = ({ onBack, userPhoto, onOpenChatSettings, onOpenCalendar, onOpenProfile, onOpenAbout }) => {
+const Settings = ({ onBack, userPhoto, onOpenChatSettings, onOpenCalendar, onOpenProfile, onOpenAbout, onOpenPrivacy }) => { // Added onOpenPrivacy to props
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -58,6 +58,8 @@ const Settings = ({ onBack, userPhoto, onOpenChatSettings, onOpenCalendar, onOpe
                   onOpenCalendar();
                 } else if (item.label === 'About') {
                   onOpenAbout();
+                } else if (item.label === 'Privacy') { // Added Privacy handler
+                  onOpenPrivacy();
                 }
               }}
             >

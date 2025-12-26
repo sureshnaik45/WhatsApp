@@ -3,29 +3,33 @@ import { ArrowLeft } from 'lucide-react';
 
 const About = ({ onBack }) => {
   const aboutPoints = [
-    "WhatsApp, Everyone. At the end of 2022, I expected some features in WhatsApp that would be amazing if they were added.",
-    "The following are features I expected, and some of them later came to WhatsApp:",
-    "During video calls, the option to change the background of the video",
-    "Sharing 30-second clips of album or movie music in status updates",
-    "Lists in WhatsApp, though my approach is different",
-    "Status sharing functionality with various media formats",
-    "The following are features that still haven't come to WhatsApp:",
-    "A Categories tab where we can add important people. If any message is received from them, it goes there, and important persons' chats are not shown in the main chats tab.",
-    "In the 'who viewed our status' section, we need a search icon for finding specific people",
-    "In groups, for sent messages, message info should show the 'seen by' count, delivery and read timestamps, and a search icon for finding members.",
-    "For received messages, we also need to show when the message was delivered to us and when it was read",
-    "When sharing text as status, provide imported fonts options",
-    "For profile photos, show when it was updated and who has seen it (for user's own profile). For others' profile pictures, show when they updated it and when we last saw it",
-    "When sharing video as status, provide an option to extract audio from the video and share that audio as status",
-    "Calendar - we can set our birthday, see others' birthdays, and update special days in our lives",
-    "For backup, instead of backing up all chats, allow specific person's chat backup for specific time periods like 2023-2024",
-    "In groups, allow hiding message sharing from some members. For identification, this feature should use an eye-off icon",
-    "Setting a timer to share a message within 24 hours. For identification, this feature should use a clock icon for that message",
-    "In status, add document sharing option. Currently, if we want to share documents to many people, we need to share individually or in groups, but not all people are present in groups.",
-    "Not allowing screenshots taking anywhere in the WhatsApp, for chatwindow need to show screenshot privacy feature where we can set who can our chats screenshot like contacts, everyone, some specific persons",
-    "When went to recent tabs we just need to show an blank window or else brand logo, as now we can see whats going in an app from recent tabs",
-    "From thinking about these features, sketching on papers, in canva, finally it came here in the form of a basic webpage"    
-  ];
+    "Hello Everyone. Back in late 2022, I envisioned several features for WhatsApp that I believed would significantly enhance the user experience (if added).",
+    "The following are features I anticipated, some of which have since been introduced to WhatsApp recently:",
+    "Video Call Backgrounds: The option to change or blur the background during active video calls.",
+    "Audio Status: Sharing 30-second music clips or audio notes directly in status updates.",
+    "Chat Organization: While WhatsApp later added 'Lists', my 'Categories' feature offers a distinct approach to isolating important chats.",
+    "Media Status: Enhanced sharing capabilities for various media formats, including audio and documents.",
+    "The following are innovative features I developed that are still not available in WhatsApp:",
+    "Categories Tab: A dedicated tab for 'Important' people. Messages from these contacts are routed here, keeping the main chat list clutter-free.",
+    "Status Viewer Search: A search icon in the status view to find specific people by name instead of scrolling through the viewer list.",
+    "Advanced Group Message Info: For sent messages, view detailed 'Seen By' counts, delivery/read timestamps, and search for specific members who read it.",
+    "Received Message Details: View the exact time a received message was delivered to your device versus when you actually read it.",
+    "Custom Fonts for Status: Access to a wide range of imported fonts when sharing text-based statuses.",
+    "Profile Insights: View timestamps of when contacts updated their profile pictures. For your own profile, see who viewed it and when you last updated it.",
+    "Profile Download Privacy: Control exactly who is allowed to download your profile picture (Everyone, Contacts, or Nobody).",
+    "Audio Extraction: The ability to extract audio from a video file and share just the audio track as a status update.",
+    "Integrated Calendar: Set birthdays, add notes for special days, and manage event privacy. Birthdays are displayed with a unique indicator on the calendar grid.",
+    "Selective Chat Backup: Backup chats for specific contacts or within a defined date range (e.g., 2023-2024) instead of a forced global backup.",
+    "Hidden Group Messages: The ability to hide specific messages in a group from selected members, identified by a privacy 'eye-off' icon.",
+    "Scheduled Messages: Set a timer to send a message automatically within a 24-hour window, marked with a distinct clock icon.",
+    "Document Status Sharing: Share PDF or TXT files as status updates, allowing contacts to open and view documents directly from the status.",
+    "Screenshot Privacy: Granular privacy controls to allow or block screenshots in chat windows for specific contacts or everyone.",
+    "Recent Apps Privacy: Displays a blank screen or logo when the app is viewed in the phone's 'Recent Apps' switcher to prevent data snooping.",
+    "Message Pinning with Duration: Pin messages for specific durations (24 hours, 1 week, Lifetime) which auto-unpin when the time expires.",
+    "Message Range Filter: A search tool to filter and view messages within a specific start and end date range.",
+    "Need to implement features related to notifications.",
+    "From conceptualizing these features on paper to designing them in Canva in late 2022, this journey has culminated in the creation of this basic webpage/MVP in 2025."
+];
 
   return (
     <div className="h-full flex flex-col bg-white">

@@ -31,8 +31,11 @@ import Calendar from './components/Calendar.js';
 import UserProfile from './components/UserProfile.js';
 import GroupInfo from './components/GroupInfo.js';
 import About from './components/About.js';
-import './App.css';
+import PrivacyMenu from './components/PrivacyMenu.js';
+import ProfileDownloadPrivacy from './components/ProfileDownloadPrivacy.js';
+import ChatPrivacy from './components/ChatPrivacy.js';
 import CalendarSettings from './components/CalendarSettings.js';
+import './App.css';
 
 const App = () => {
   const [showAddMemberModal, setShowAddMemberModal] = useState(null);
@@ -88,10 +91,16 @@ const App = () => {
   const [selectedMembersForRemove, setSelectedMembersForRemove] = useState([]);
   const [chatPinnedMessages, setChatPinnedMessages] = useState({}); 
   const [showAbout, setShowAbout] = useState(false);
-  const [showCategoryInfo, setShowCategoryInfo] = useState(false);
+
+  const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
+  const [showPrivacyStatus, setShowPrivacyStatus] = useState(false);
+  const [showPrivacyChat, setShowPrivacyChat] = useState(false);
+  const [showPrivacyProfile, setShowPrivacyProfile] = useState(false);
+  const [showPrivacyCalendar, setShowPrivacyCalendar] = useState(false);
+
   const [userPhoto, setUserPhoto] = useState( '👤');
   const [birthdays, setBirthdays] = useState({
-    // August is month index 7
+    // August month index is 7
     '2025-7-17': [{ id: 1, name: 'Mom', avatar: '👩‍💼', type: 'birthday' }],
     '2025-7-30': [{ id: 2, name: 'Dad', avatar: '👨‍🦳', type: 'birthday' }],
     '2025-8-10': [{ id: 3, name: 'Sister', avatar: '👩‍🎓', type: 'birthday' }],
@@ -435,7 +444,8 @@ const App = () => {
                    activeChat || selectedCategory || (showVideoCall && !isCallMinimized) || showMyStatusViewer
                    || showSettings || showChatSettings || showIndividualBackup || showStarredMessages || showPinnedMessages
                    || showCalendar || showBirthdaySelector || showBackupToast || showUserProfile || showAbout ||
-                   showAddMemberModal || showRemoveMemberModal || showCalendarSettings;
+                   showAddMemberModal || showRemoveMemberModal || showCalendarSettings || showPrivacyCalendar
+                   || showPrivacyMenu || showPrivacyStatus || showPrivacyChat || showPrivacyProfile;
 
 
 
@@ -466,8 +476,8 @@ const App = () => {
             setShowCalendar(true); // Go back to the calendar
           }}
         />
-      )}              
-
+      )}        
+    
       {showCallsSearch && ( 
         <CallsSearch 
           onBack={() => setShowCallsSearch(false)} 
@@ -495,6 +505,10 @@ const App = () => {
             setShowSettings(false);
             setShowAbout(true);
           }}
+          onOpenPrivacy={() => {
+            setShowSettings(false);
+            setShowPrivacyMenu(true);
+          }}
         /> 
       )}
 
@@ -503,6 +517,68 @@ const App = () => {
           onBack={() => {
             setShowAbout(false);
             setShowSettings(true);
+          }}
+        />
+      )}
+
+      {showPrivacyMenu && (
+        <PrivacyMenu 
+          onBack={() => {
+            setShowPrivacyMenu(false);
+            setShowSettings(true);
+          }}
+          onOpenStatusPrivacy={() => {
+            setShowPrivacyMenu(false);
+            setShowPrivacyStatus(true);
+          }}
+          onOpenChatPrivacy={() => {
+            setShowPrivacyMenu(false);
+            setShowPrivacyChat(true);
+          }}
+          onOpenProfileDownloadPrivacy={() => {
+            setShowPrivacyMenu(false);
+            setShowPrivacyProfile(true);
+          }}
+          onOpenCalendarPrivacy={() => {
+            setShowPrivacyMenu(false);
+            setShowPrivacyCalendar(true);
+          }}
+        />
+      )}
+
+      {/* Privacy Sub-Screens */}
+      {showPrivacyStatus && (
+        <StatusSettings 
+          onBack={() => {
+            setShowPrivacyStatus(false);
+            setShowPrivacyMenu(true);
+          }}
+        />
+      )}
+
+      {showPrivacyChat && (
+        <ChatPrivacy 
+          onBack={() => {
+            setShowPrivacyChat(false);
+            setShowPrivacyMenu(true);
+          }}
+        />
+      )}
+
+      {showPrivacyProfile && (
+        <ProfileDownloadPrivacy 
+          onBack={() => {
+            setShowPrivacyProfile(false);
+            setShowPrivacyMenu(true);
+          }}
+        />
+      )}
+      
+      {showPrivacyCalendar && (
+        <CalendarSettings
+          onBack={() => {
+            setShowPrivacyCalendar(false);
+            setShowPrivacyMenu(true);
           }}
         />
       )}
